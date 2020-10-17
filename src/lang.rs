@@ -1,8 +1,9 @@
 use std::fmt;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+use crate::StdErr;
 use Language::*;
 
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub enum Language {
     Java,
     Python,
@@ -18,18 +19,30 @@ impl Language {
         }
     }
 
+    pub fn from_file(file: &PathBuf) -> Result<Language, StdErr> {
+        let ext = match file.extension() {
+            Some(e) => e.to_str().expect("invalid unicode in file extension"),
+            None => return Err("file has no file extension".into()),
+        };
+
+        let lang = Self::from_file_ext(&ext.to_lowercase());
+
+        Ok(lang)
+    }
+
     // FIXME: This function may trust the input path too much.
-    pub fn get_compile_instructions<'a>(&self, path: &'a str) -> (Option<Vec<&'a str>>, PathBuf) {
+    pub fn get_compile_instructions<'a>(&self, path: &'a PathBuf) -> (Option<Vec<&'a str>>, PathBuf) {
+        let path_str = path.to_str().expect("path contained invalid unicode");
+
         let cmd = match self {
-            Java => Some(vec!["javac", path]),
+            Java => Some(vec!["javac", path_str]),
             Python => None,
             Unknown => None,
         };
 
-        let path = Path::new(path).to_path_buf();
         let exec_path = match self {
             Java => path.with_extension(""),
-            Python => path,
+            Python => path.to_owned(),
             Unknown => PathBuf::new(),
         };
 
@@ -37,8 +50,7 @@ impl Language {
     }
 
     // FIXME: This function may trust the input path too much.
-    pub fn get_run_cmd<'a>(&self, path: &'a str) -> Option<Vec<String>> {
-        let file_path = Path::new(path).to_path_buf();
+    pub fn get_run_cmd(&self, file_path: &PathBuf) -> Option<Vec<String>> {
         let mut dir_path = file_path.clone();
         dir_path.pop();
 
@@ -55,13 +67,20 @@ impl Language {
 
         Some(cmd.iter().map(|s| s.to_string()).collect())
     }
+
+    pub fn has_main_class(&self) -> bool {
+        match self {
+            Java => true,
+            Python | Unknown => false,
+        }
+    }
 }
 
 impl fmt::Display for Language {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let str = match self {
             Java => "Java",
-            Python => "Python",
+            Python => "Python 3",
             Unknown => "Unknown",
         };
 

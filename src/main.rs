@@ -2,6 +2,7 @@ use colored::Colorize;
 
 mod cli;
 mod commands;
+mod problem;
 mod lang;
 
 type StdErr = Box<dyn std::error::Error>;
@@ -14,6 +15,7 @@ async fn main() {
     let res = match matches.subcommand() {
         ("test", Some(sub)) => commands::test(sub).await,
         ("get", Some(sub)) => commands::get(sub).await,
+        ("submit", Some(sub)) => commands::submit(sub).await,
         _ => async { Ok(()) }.await,
     };
 
