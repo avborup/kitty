@@ -49,10 +49,7 @@ pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
 
     let id = match submit_problem(&client, &problem).await? {
         Some(i) => i,
-        None => {
-            println!("Your submission was succesful, but kitty couldn't get the ID of it. Please check Kattis in the browser instead.");
-            return Ok(());
-        },
+        None => return Err("something went wrong during submission".into()),
     };
 
     println!("{} solution successfully. view it at https://open.kattis.com/submissions/{}", "submitted".bright_green(), id);
@@ -158,17 +155,17 @@ async fn submit_problem(client: &Client, problem: &Problem) -> Result<Option<Str
 
     let content = match res.text().await {
         Ok(t) => t,
-        Err(_) => return Err("failed to read response from kattis, but your solution should have been submitted.".into()),
-    };
-    let re = Regex::new(r"ID: (\d+)").unwrap();
-    let caps = match re.captures(&content) {
-        Some(c) => c,
-        None => return Ok(None),
-    };
-    let id = match caps.get(1) {
-        Some(i) => i,
-        None => return Ok(None),
+        Err(_) => return Err("failed to read response from kattis".into()),
     };
 
-    Ok(Some(id.as_str().to_string()))
+    if content.contains("Problem not found") {
+        return Err(format!("the problem \"{}\" does not exist", problem.name()).into());
+    }
+
+    let re = Regex::new(r"ID: (\d+)").unwrap();
+    let id = re.captures(&content)
+        .and_then(|c| c.get(1))
+        .and_then(|i| Some(i.as_str().to_string()));
+
+    Ok(id)
 }
