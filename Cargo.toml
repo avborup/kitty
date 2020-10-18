@@ -5,7 +5,7 @@ authors = ["Adrian Borup <adrian@borup.com>"]
 edition = "2018"
 
 [dependencies]
-clap = { version = "2.33.3", features = ["yaml"] }
+clap = "2.33.3"
 colored = "2.0.0"
 reqwest = { version = "0.10.8", features = ["cookies"] }
 tokio = { version = "0.2.22", features = ["macros"] }
