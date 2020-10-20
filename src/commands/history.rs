@@ -1,7 +1,7 @@
 use clap::ArgMatches;
 use scraper::{Html, Selector};
 use crate::StdErr;
-use crate::config::{Config, Credentials};
+use crate::config::Config;
 use crate::kattis_client::KattisClient;
 
 const CHECKBOX: &'static str = "\u{2705}"; // Green checkbox emoji
@@ -13,11 +13,9 @@ pub async fn history(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         Err(_) => return Err("please provide --count as an integer".into()),
     };
 
-    let creds = Config::load()?.get_credentials()?;
+    let cfg = Config::load()?;
     let kc = KattisClient::new()?;
-
-    kc.login(creds.clone()).await?;
-    let history = get_history(&kc, creds).await?;
+    let history = get_history(&kc, &cfg).await?;
 
     let n = if cmd.is_present("all") { history.len() } else { count };
     for submission in history.iter().take(n) {
@@ -32,10 +30,13 @@ struct Submission {
     status_symbol: String,
 }
 
-async fn get_history(kc: &KattisClient, creds: Credentials) -> Result<Vec<Submission>, StdErr> {
-    let url = format!("https://open.kattis.com/users/{}", creds.username);
+async fn get_history(kc: &KattisClient, cfg: &Config) -> Result<Vec<Submission>, StdErr> {
+    let creds = cfg.get_credentials()?;
+    let login_url = cfg.get_login_url()?;
+    let profile_url = format!("https://{}/users/{}", cfg.get_host_name()?, creds.username);
 
-    let res = kc.client.get(&url).send().await?;
+    kc.login(creds.clone(), login_url).await?;
+    let res = kc.client.get(&profile_url).send().await?;
 
     let status = res.status();
     if !status.is_success() {

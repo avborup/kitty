@@ -45,23 +45,27 @@ pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
 
     let cfg = Config::load()?;
     let creds = cfg.get_credentials()?;
+    let submit_url = cfg.get_submit_url()?;
+    let login_url = cfg.get_login_url()?;
 
     let client = KattisClient::new()?;
-    client.login(creds.clone()).await?;
+    client.login(creds.clone(), login_url).await?;
 
-    let id = match submit_problem(&client, &problem).await? {
+    let id = match submit_problem(&client, &problem, submit_url).await? {
         Some(i) => i,
         None => return Err("something went wrong during submission".into()),
     };
 
-    println!("{} solution to https://open.kattis.com/submissions/{}", "submitted".bright_green(), id);
+    let submission_url = format!("{}/{}", cfg.get_submissions_url()?, &id);
 
-    show_submission_status(&client, creds, &id).await?;
+    println!("{} solution to {}", "submitted".bright_green(), &submission_url.underline());
+
+    show_submission_status(&client, creds, &submission_url, login_url).await?;
 
     Ok(())
 }
 
-async fn submit_problem(kc: &KattisClient, problem: &Problem) -> Result<Option<String>, StdErr> {
+async fn submit_problem(kc: &KattisClient, problem: &Problem, submit_url: &str) -> Result<Option<String>, StdErr> {
     let file_path = problem.file();
     let file_name = file_path.file_name().unwrap().to_str().unwrap().to_string();
 
@@ -83,7 +87,7 @@ async fn submit_problem(kc: &KattisClient, problem: &Problem) -> Result<Option<S
         .text("submit", "true")
         .text("script", "true");
 
-    let res = kc.client.post("https://open.kattis.com/submit")
+    let res = kc.client.post(submit_url)
         .multipart(form)
         .send()
         .await?;
@@ -117,8 +121,7 @@ enum TestCase {
     Unfinished,
 }
 
-async fn show_submission_status(kc: &KattisClient, creds: Credentials, id: &str) -> Result<(), StdErr> {
-    let url = format!("https://open.kattis.com/submissions/{}", id);
+async fn show_submission_status(kc: &KattisClient, creds: Credentials, submission_url: &str, login_url: &str) -> Result<(), StdErr> {
     let fail_reason_re = Regex::new(r"([\w ]+)$").unwrap();
     let mut fail = None;
     let mut num_passed;
@@ -126,8 +129,8 @@ async fn show_submission_status(kc: &KattisClient, creds: Credentials, id: &str)
 
     loop {
         // For some odd and godforsaken reason, we must log in before every request.
-        kc.login(creds.clone()).await?;
-        let res = kc.client.get(&url).send().await?;
+        kc.login(creds.clone(), login_url).await?;
+        let res = kc.client.get(submission_url).send().await?;
 
         let status = res.status();
         if !status.is_success() {

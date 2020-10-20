@@ -1,5 +1,5 @@
 use platform_dirs::AppDirs;
-use ini::Ini;
+use ini::{Ini, Properties};
 use crate::StdErr;
 
 /// A configuration interaction layer.
@@ -47,8 +47,8 @@ impl Config {
     /// following section:
     /// ```ini
     /// [user]
-    /// username = <some username>
-    /// token = <some token>
+    /// username: <some username>
+    /// token: <some token>
     /// ```
     /// If this is not the case, `Err` is returned.
     pub fn get_credentials(&self) -> Result<Credentials, StdErr> {
@@ -71,6 +71,71 @@ impl Config {
             username: username.to_string(),
             token: token.to_string(),
         })
+    }
+
+    fn get_kattis_section(&self) -> Result<&Properties, StdErr> {
+        let kattis_section = match self.ini.section(Some("kattis")) {
+            Some(k) => k,
+            None => return Err("could not find kattis section in .kattisrc".into()),
+        };
+
+        Ok(kattis_section)
+    }
+
+    /// Retrieves the host name from the config if the config file contains the
+    /// following section:
+    /// ```ini
+    /// [kattis]
+    /// hostname: <e.g. open.kattis.com>
+    /// ```
+    /// If this cannot be found, `Err` is returned.
+    pub fn get_host_name(&self) -> Result<&str, StdErr> {
+        match self.get_kattis_section()?.get("hostname") {
+            Some(u) => Ok(u),
+            None => return Err("could not find hostname under [kattis] in .kattisrc".into()),
+        }
+    }
+
+    /// Retrieves the submission url from the config if the config file contains
+    /// the following section:
+    /// ```ini
+    /// [kattis]
+    /// submissionurl: <e.g. https://open.kattis.com/submit>
+    /// ```
+    /// If this cannot be found, `Err` is returned.
+    pub fn get_submit_url(&self) -> Result<&str, StdErr> {
+        match self.get_kattis_section()?.get("submissionurl") {
+            Some(u) => Ok(u),
+            None => return Err("could not find submission url under [kattis] in .kattisrc".into()),
+        }
+    }
+
+    /// Retrieves the submissions url from the config if the config file
+    /// contains the following section:
+    /// ```ini
+    /// [kattis]
+    /// submissionsurl: <e.g. https://open.kattis.com/submissions>
+    /// ```
+    /// If this cannot be found, `Err` is returned.
+    pub fn get_submissions_url(&self) -> Result<&str, StdErr> {
+        match self.get_kattis_section()?.get("submissionsurl") {
+            Some(u) => Ok(u),
+            None => return Err("could not find submissions url under [kattis] in .kattisrc".into()),
+        }
+    }
+
+    /// Retrieves the login url from the config if the config file contains the
+    /// following section:
+    /// ```ini
+    /// [kattis]
+    /// loginurl: <e.g. https://open.kattis.com/login>
+    /// ```
+    /// If this cannot be found, `Err` is returned.
+    pub fn get_login_url(&self) -> Result<&str, StdErr> {
+        match self.get_kattis_section()?.get("loginurl") {
+            Some(u) => Ok(u),
+            None => return Err("could not find login url under [kattis] in .kattisrc".into()),
+        }
     }
 }
 

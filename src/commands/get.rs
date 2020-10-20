@@ -5,6 +5,7 @@ use std::io::{self, Read, Write};
 use std::path::PathBuf;
 use zip::ZipArchive;
 use colored::Colorize;
+use crate::config::Config;
 use crate::StdErr;
 
 pub async fn get(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
@@ -16,7 +17,10 @@ pub async fn get(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         return Err("problem id must only contain alphanumeric characters".into());
     }
 
-    let p_url = format!("https://open.kattis.com/problems/{}", id);
+    let cfg = Config::load()?;
+    let host_name = cfg.get_host_name()?;
+
+    let p_url = format!("https://{}/problems/{}", host_name, id);
     let p_res = reqwest::get(&p_url).await?;
 
     let p_status = p_res.status();

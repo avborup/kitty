@@ -19,12 +19,12 @@ impl KattisClient {
         Ok(Self { client })
     }
 
-    pub async fn login(&self, creds: Credentials) -> Result<Response, StdErr> {
+    pub async fn login(&self, creds: Credentials, login_url: &str) -> Result<Response, StdErr> {
         let form = Form::new()
             .text("user", creds.username)
             .text("token", creds.token)
             .text("script", "true");
-        let res = self.client.post("https://open.kattis.com/login")
+        let res = self.client.post(login_url)
             .multipart(form)
             .send()
             .await?;

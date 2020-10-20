@@ -1,6 +1,7 @@
 use clap::ArgMatches;
 use std::env;
 use colored::Colorize;
+use crate::config::Config;
 use crate::StdErr;
 
 pub async fn open(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
@@ -30,7 +31,9 @@ pub async fn open(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         return Err(format!("\"{}\" is not a valid problem id", &id).into());
     }
 
-    let url = format!("https://open.kattis.com/problems/{}", &id);
+    let cfg = Config::load()?;
+    let host_name = cfg.get_host_name()?;
+    let url = format!("https://{}/problems/{}", host_name, &id);
 
     if let Err(_) = webbrowser::open(&url) {
         return Err(format!("failed to open {} in your browser", &url).into());
