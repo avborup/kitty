@@ -39,7 +39,7 @@ pub async fn get(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
 
     fetch_tests(&p_dir, &p_url).await?;
 
-    println!("{} problem \"{}\"", "created".green(), id);
+    println!("{} problem \"{}\"", "created".bright_green(), id);
 
     Ok(())
 }
