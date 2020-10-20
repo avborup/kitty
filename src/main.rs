@@ -22,7 +22,7 @@ async fn main() {
     std::process::exit(match res {
         Ok(_) => 0,
         Err(e) => {
-            eprintln!("{}: {}", "error".red(), e);
+            eprintln!("{}: {}", "error".bright_red(), e);
             1
         }
     });
