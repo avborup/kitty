@@ -4,6 +4,7 @@ mod cli;
 mod commands;
 mod problem;
 mod lang;
+mod config;
 
 type StdErr = Box<dyn std::error::Error>;
 

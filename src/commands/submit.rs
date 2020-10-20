@@ -1,6 +1,4 @@
 use clap::ArgMatches;
-use platform_dirs::AppDirs;
-use ini::Ini;
 use reqwest::{Client, Response};
 use reqwest::multipart::{Form, Part};
 use std::fs;
@@ -13,6 +11,7 @@ use scraper::{Html, Selector};
 use selectors::attr::CaseSensitivity;
 use crate::StdErr;
 use crate::problem::Problem;
+use crate::config::{Config, Credentials};
 
 const CHECKBOX: &'static str = "\u{2705}"; // Green checkbox emoji
 const CROSSMARK: &'static str = "\u{274C}"; // Red X emoji
@@ -45,7 +44,8 @@ pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         }
     }
 
-    let creds = get_credentials()?;
+    let cfg = Config::load()?;
+    let creds = cfg.get_credentials()?;
 
     let client = Client::builder()
         .cookie_store(true)
@@ -63,50 +63,6 @@ pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     show_submission_status(&client, creds, &id).await?;
 
     Ok(())
-}
-
-#[derive(Clone)]
-struct Credentials {
-    username: String,
-    token: String,
-}
-
-fn get_credentials() -> Result<Credentials, StdErr> {
-    let app_dirs = match AppDirs::new(Some("kitty"), false) {
-        Some(a) => a,
-        None => return Err("failed to find kitty config directory".into()),
-    };
-    let config_path = app_dirs.config_dir.join(".kattisrc");
-
-    if !config_path.exists() {
-        return Err(format!("could not find .kattisrc file. you must download your .kattisrc file from https://open.kattis.com/download/kattisrc and save it at {}",
-                           config_path.to_str().expect("config file path contained invalid unicode")).into());
-    }
-
-    let cfg = match Ini::load_from_file(config_path) {
-        Ok(c) => c,
-        Err(_) => return Err("failed to read .kattisrc file".into()),
-    };
-
-    let user_section = match cfg.section(Some("user")) {
-        Some(u) => u,
-        None => return Err("could not find user section in .kattisrc".into()),
-    };
-
-    let username = match user_section.get("username") {
-        Some(u) => u,
-        None => return Err("could not find username under [user] in .kattisrc".into()),
-    };
-
-    let token = match user_section.get("token") {
-        Some(u) => u,
-        None => return Err("could not find token under [user] in .kattisrc".into()),
-    };
-
-    Ok(Credentials {
-        username: username.to_string(),
-        token: token.to_string(),
-    })
 }
 
 async fn login(client: &Client, creds: Credentials) -> Result<Response, StdErr> {
