@@ -19,6 +19,7 @@ async fn main() {
         ("get", Some(sub)) => commands::get(sub).await,
         ("submit", Some(sub)) => commands::submit(sub).await,
         ("history", Some(sub)) => commands::history(sub).await,
+        ("open", Some(sub)) => commands::open(sub).await,
         _ => async { Ok(()) }.await,
     };
 

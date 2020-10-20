@@ -68,4 +68,11 @@ pub fn init() -> App<'static, 'static> {
                          .long("all")
                          .help("Show all submissions (if --count is present too, it is ignored)"))
                    )
+        .subcommand(SubCommand::with_name("open")
+                    .about("Opens a problem in the browser")
+                    .setting(AppSettings::DisableVersion)
+                    .arg(Arg::with_name("PROBLEM ID")
+                         .help("The ID of the problem as seen in its URL. [default: the name of the current directory]")
+                         .index(1))
+                   )
 }
