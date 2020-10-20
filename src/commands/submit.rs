@@ -1,5 +1,4 @@
 use clap::ArgMatches;
-use reqwest::{Client, Response};
 use reqwest::multipart::{Form, Part};
 use std::fs;
 use std::io::{self, Write};
@@ -12,10 +11,10 @@ use selectors::attr::CaseSensitivity;
 use crate::StdErr;
 use crate::problem::Problem;
 use crate::config::{Config, Credentials};
+use crate::kattis_client::KattisClient;
 
 const CHECKBOX: &'static str = "\u{2705}"; // Green checkbox emoji
 const CROSSMARK: &'static str = "\u{274C}"; // Red X emoji
-const USER_AGENT: &'static str = env!("CARGO_PKG_NAME");
 const SLEEP_DURATION: Duration = Duration::from_secs(1);
 
 pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
@@ -47,12 +46,9 @@ pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let cfg = Config::load()?;
     let creds = cfg.get_credentials()?;
 
-    let client = Client::builder()
-        .cookie_store(true)
-        .user_agent(USER_AGENT)
-        .build()?;
+    let client = KattisClient::new()?;
+    client.login(creds.clone()).await?;
 
-    login(&client, creds.clone()).await?;
     let id = match submit_problem(&client, &problem).await? {
         Some(i) => i,
         None => return Err("something went wrong during submission".into()),
@@ -65,28 +61,7 @@ pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     Ok(())
 }
 
-async fn login(client: &Client, creds: Credentials) -> Result<Response, StdErr> {
-    let form = Form::new()
-        .text("user", creds.username)
-        .text("token", creds.token)
-        .text("script", "true");
-    let res = client.post("https://open.kattis.com/login")
-        .multipart(form)
-        .send()
-        .await?;
-
-    let status = res.status();
-    if !status.is_success() {
-        match res.status().as_str() {
-            "403" => return Err("the login credentials from your .kattisrc are not valid".into()),
-            _ => return Err(format!("failed to log in to kattis (http status code {})", status).into()),
-        }
-    }
-
-    Ok(res)
-}
-
-async fn submit_problem(client: &Client, problem: &Problem) -> Result<Option<String>, StdErr> {
+async fn submit_problem(kc: &KattisClient, problem: &Problem) -> Result<Option<String>, StdErr> {
     let file_path = problem.file();
     let file_name = file_path.file_name().unwrap().to_str().unwrap().to_string();
 
@@ -108,7 +83,7 @@ async fn submit_problem(client: &Client, problem: &Problem) -> Result<Option<Str
         .text("submit", "true")
         .text("script", "true");
 
-    let res = client.post("https://open.kattis.com/submit")
+    let res = kc.client.post("https://open.kattis.com/submit")
         .multipart(form)
         .send()
         .await?;
@@ -142,7 +117,7 @@ enum TestCase {
     Unfinished,
 }
 
-async fn show_submission_status(client: &Client, creds: Credentials, id: &str) -> Result<(), StdErr> {
+async fn show_submission_status(kc: &KattisClient, creds: Credentials, id: &str) -> Result<(), StdErr> {
     let url = format!("https://open.kattis.com/submissions/{}", id);
     let fail_reason_re = Regex::new(r"([\w ]+)$").unwrap();
     let mut fail = None;
@@ -151,8 +126,8 @@ async fn show_submission_status(client: &Client, creds: Credentials, id: &str) -
 
     loop {
         // For some odd and godforsaken reason, we must log in before every request.
-        login(&client, creds.clone()).await?;
-        let res = client.get(&url).send().await?;
+        kc.login(creds.clone()).await?;
+        let res = kc.client.get(&url).send().await?;
 
         let status = res.status();
         if !status.is_success() {

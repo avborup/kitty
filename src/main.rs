@@ -5,6 +5,7 @@ mod commands;
 mod problem;
 mod lang;
 mod config;
+mod kattis_client;
 
 type StdErr = Box<dyn std::error::Error>;
 
