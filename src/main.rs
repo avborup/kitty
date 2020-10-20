@@ -18,6 +18,7 @@ async fn main() {
         ("test", Some(sub)) => commands::test(sub).await,
         ("get", Some(sub)) => commands::get(sub).await,
         ("submit", Some(sub)) => commands::submit(sub).await,
+        ("history", Some(sub)) => commands::history(sub).await,
         _ => async { Ok(()) }.await,
     };
 
