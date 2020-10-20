@@ -62,7 +62,7 @@ fn run_tests(compile_cmd: Option<Vec<&str>>, run_cmd: &[String], tests: &Vec<(Pa
                 Err(_) => return Err("compilation output stderr contained invalid UTF-8".into()),
             };
 
-            println!("{}\n{}\n", "compilation error:".red(), stderr.trim());
+            println!("{}:\n{}\n", "compilation error".bright_red(), stderr.trim());
 
             return Err("program failed to compile".into());
         }
@@ -143,11 +143,11 @@ fn run_tests(compile_cmd: Option<Vec<&str>>, run_cmd: &[String], tests: &Vec<(Pa
                 Err(_) => return Err("program output (stderr) contained invalid UTF-8".into()),
             };
 
-            println!("{}\n{}\n", "program error:".red(), stderr.trim());
+            println!("{}:\n{}\n", "program error".bright_red(), stderr.trim());
         }
     }
 
-    let test_result = if fails == 0 { "ok".green() } else { "failed".red() };
+    let test_result = if fails == 0 { "ok".bright_green() } else { "failed".bright_red() };
     let num_passed = tests.len() - fails;
     println!("\ntest result: {}. {} passed; {} failed.", test_result, num_passed, fails);
 
