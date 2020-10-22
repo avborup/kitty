@@ -20,6 +20,7 @@ async fn main() {
         ("submit", Some(sub)) => commands::submit(sub).await,
         ("history", Some(sub)) => commands::history(sub).await,
         ("open", Some(sub)) => commands::open(sub).await,
+        ("random", Some(sub)) => commands::random(sub).await,
         _ => async { Ok(()) }.await,
     };
 
