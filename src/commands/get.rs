@@ -20,6 +20,12 @@ pub async fn get(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let cfg = Config::load()?;
     let host_name = cfg.get_host_name()?;
 
+    get_and_create_problem(id, host_name).await?;
+
+    Ok(())
+}
+
+pub async fn get_and_create_problem(id: &str, host_name: &str) -> Result<(), StdErr> {
     let p_url = format!("https://{}/problems/{}", host_name, id);
     let p_res = reqwest::get(&p_url).await?;
 

@@ -4,8 +4,10 @@ use regex::Regex;
 use rand::thread_rng;
 use rand::seq::SliceRandom;
 use colored::Colorize;
+use std::io::{self, Write};
 use crate::config::Config;
 use crate::kattis_client::KattisClient;
+use crate::commands::get::get_and_create_problem;
 use crate::StdErr;
 
 pub async fn random(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
@@ -22,6 +24,22 @@ pub async fn random(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     println!("{}:    {}", "Problem".bright_cyan(), problem.id);
     println!("{}: {}", "Difficulty".bright_cyan(), problem.difficulty);
     println!("{}:        {}", "URL".bright_cyan(), format!("https://{}/problems/{}", &host_name, problem.id).underline());
+
+    if !cmd.is_present("yes") {
+        print!("Do you want to fetch this problem? (y/n): ");
+        io::stdout().flush().expect("failed to flush stdout");
+
+        let mut input = String::new();
+        if let Err(_) = io::stdin().read_line(&mut input) {
+            return Err("failed to read input".into());
+        }
+
+        if input.trim().to_lowercase() != "y" {
+            return Ok(());
+        }
+    }
+
+    get_and_create_problem(&problem.id, host_name).await?;
 
     Ok(())
 }

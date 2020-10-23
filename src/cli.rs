@@ -91,5 +91,9 @@ pub fn init() -> App<'static, 'static> {
                          .help("Direction to sort")
                          .possible_values(&["asc", "desc"])
                          .default_value("asc"))
+                    .arg(Arg::with_name("yes")
+                         .short("y")
+                         .long("yes")
+                         .help("Skip the prompt asking if you want to fetch the problem, saying \"yes\" in advance"))
                    )
 }
