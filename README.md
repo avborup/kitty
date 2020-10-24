@@ -46,7 +46,9 @@ $ cargo install --git https://github.com/KongBorup/kitty
 ```
 
 ### Prebuilt binaries
-Prebuilt binaries will be added soon enough. If you see this and no binaries have been uploaded, feel free to create an issue - then I will get around to it as soon as possible.
+You can find prebuilt binaries in the [releases section](https://github.com/KongBorup/kitty/releases). Once the binary is downloaded, you should be ready to go. Remember to make sure that the binary is in your PATH.
+
+Currently, only a Windows binary is uploaded. If you want a Linux or macOS binary, feel free to create an issue - then I will get around to it as soon as possible.
 
 ## Feature requests
 Feel free to create a new issue if you have any problems or have any feature requests. Pull requests are also welcome.
