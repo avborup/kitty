@@ -34,7 +34,7 @@ pub async fn test(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     Ok(())
 }
 
-fn run_tests(compile_cmd: Option<Vec<&str>>, run_cmd: &[String], tests: &Vec<(PathBuf, PathBuf)>) -> Result<(), StdErr> {
+fn run_tests(compile_cmd: Option<Vec<String>>, run_cmd: &[String], tests: &Vec<(PathBuf, PathBuf)>) -> Result<(), StdErr> {
     if let Some(cmd) = compile_cmd {
         let mut compile_parts = cmd.iter();
         // We always define commands ourselves in this source code, so we can

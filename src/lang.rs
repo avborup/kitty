@@ -3,10 +3,17 @@ use std::path::PathBuf;
 use crate::StdErr;
 use Language::*;
 
+#[cfg(target_os = "windows")]
+const EXEC_EXT: &str = "exe";
+
+#[cfg(not(target_os = "windows"))]
+const EXEC_EXT: &str = "";
+
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub enum Language {
     Java,
     Python,
+    Rust,
     Unknown,
 }
 
@@ -15,6 +22,7 @@ impl Language {
         match ext {
             "java" => Java,
             "py" => Python,
+            "rs" => Rust,
             _ => Unknown,
         }
     }
@@ -31,18 +39,24 @@ impl Language {
     }
 
     // FIXME: This function may trust the input path too much.
-    pub fn get_compile_instructions<'a>(&self, path: &'a PathBuf) -> (Option<Vec<&'a str>>, PathBuf) {
+    pub fn get_compile_instructions(&self, path: &PathBuf) -> (Option<Vec<String>>, PathBuf) {
+        let mut dir_path = path.clone();
+        dir_path.pop();
+
         let path_str = path.to_str().expect("path contained invalid unicode");
+        let dir_path_str = dir_path.to_str().expect("path contained invalid unicode");
 
         let cmd = match self {
             Java => Some(vec!["javac", path_str]),
             Python => None,
+            Rust => Some(vec!["rustc", "--out-dir", dir_path_str, path_str]),
             Unknown => None,
-        };
+        }.and_then(|v| Some(v.iter().map(|s| s.to_string()).collect::<Vec<String>>()));
 
         let exec_path = match self {
             Java => path.with_extension(""),
             Python => path.to_owned(),
+            Rust => path.with_extension(EXEC_EXT),
             Unknown => PathBuf::new(),
         };
 
@@ -62,6 +76,7 @@ impl Language {
                 vec!["java", "-cp", class_path, class_name]
             },
             Python => vec!["python", file_path.to_str().unwrap()],
+            Rust => vec![file_path.to_str().unwrap()],
             Unknown => return None,
         };
 
@@ -71,7 +86,7 @@ impl Language {
     pub fn has_main_class(&self) -> bool {
         match self {
             Java => true,
-            Python | Unknown => false,
+            Python | Rust | Unknown => false,
         }
     }
 }
@@ -81,6 +96,7 @@ impl fmt::Display for Language {
         let str = match self {
             Java => "Java",
             Python => "Python 3",
+            Rust => "Rust",
             Unknown => "Unknown",
         };
 
