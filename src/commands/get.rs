@@ -7,6 +7,7 @@ use zip::ZipArchive;
 use colored::Colorize;
 use crate::config::Config;
 use crate::StdErr;
+use crate::lang::Language;
 
 pub async fn get(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     // We can unwrap here because clap will exit automatically when this arg is
@@ -21,6 +22,16 @@ pub async fn get(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let host_name = cfg.get_host_name()?;
 
     get_and_create_problem(id, host_name).await?;
+
+    match cmd.value_of("language") {
+        Some(l) => {
+            let lang = Language::from_file_ext(l);
+            init_file(&cfg, id, &lang)?;
+        },
+        None => {},
+    }
+
+    println!("{} problem \"{}\"", "created".bright_green(), id);
 
     Ok(())
 }
@@ -48,8 +59,6 @@ pub async fn get_and_create_problem(id: &str, host_name: &str) -> Result<(), Std
     }
 
     fetch_tests(&p_dir, &p_url).await?;
-
-    println!("{} problem \"{}\"", "created".bright_green(), id);
 
     Ok(())
 }
@@ -111,6 +120,44 @@ async fn fetch_tests(parent_dir: &PathBuf, problem_url: &str) -> Result<(), StdE
         if let Err(_) = dest.write_all(&content.as_bytes()) {
             return Err(format!("failed to write to file {}", &name).into());
         }
+    }
+
+    Ok(())
+}
+
+pub fn init_file(cfg: &Config, problem_id: &str, lang: &Language) -> Result<(), StdErr> {
+    if let Language::Unknown = lang {
+        println!("kitty cannot handle the given language and will skip creating the file for you.");
+        return Ok(())
+    }
+
+    let templates_dir = cfg.get_templates_dir();
+
+    if !templates_dir.exists() {
+        println!("you have not created any templates yet. kitty will skip creating the file for you.");
+        return Ok(())
+    }
+
+    let template_file_name = format!("template.{}", lang.file_ext());
+    let template_file = templates_dir.join(&template_file_name);
+
+    if !template_file.exists() {
+        println!("{} does not exist. kitty will skip creating the file for you.", &template_file_name);
+        return Ok(())
+    }
+
+    let template = match fs::read_to_string(&template_file) {
+        Ok(t) => t.replace("$FILENAME", problem_id),
+        Err(_) => return Err(format!("failed to read {}", &template_file_name).into()),
+    };
+
+    let cwd = env::current_dir()?;
+    let p_dir = cwd.join(problem_id);
+    let problem_file_name = format!("{}.{}", problem_id, lang.file_ext());
+    let problem_file = p_dir.join(&problem_file_name);
+
+    if let Err(_) = fs::write(problem_file, template) {
+        return Err(format!("failed to create template file {}", template_file_name).into());
     }
 
     Ok(())

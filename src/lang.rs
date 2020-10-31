@@ -27,6 +27,15 @@ impl Language {
         }
     }
 
+    pub fn file_ext(&self) -> &str {
+        match self {
+            Java => "java",
+            Python => "py",
+            Rust => "rs",
+            _ => "",
+        }
+    }
+
     pub fn from_file(file: &PathBuf) -> Result<Language, StdErr> {
         let ext = match file.extension() {
             Some(e) => e.to_str().expect("invalid unicode in file extension"),

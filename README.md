@@ -38,6 +38,25 @@ $ kitty submit [PATH TO PROBLEM]
 ```
 To upload your solution, Kitty needs access to your `.kattisrc` file. Run the command, and you will receive an error telling you what to do in order to set it up.
 
+### Templates
+You can define your own custom templates for your preffered programming language. If you use `kitty get`, then you can add an optional parameter `--lang`, specifying what template you want to use. For example, in your kitty config directory, you can create the file `kitty/templates/template.java` containing the following code:
+```java
+import java.util.Scanner;
+
+public class $FILENAME {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+
+        sc.close();
+    }
+}
+```
+Then you can call
+```sh
+$ kitty get --lang java
+```
+which will create a file called `<PROBLEM ID>.java` that you can use.
+
 ## Installation
 ### Cargo
 You can install Kitty using cargo.
