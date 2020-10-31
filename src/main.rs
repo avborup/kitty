@@ -21,6 +21,7 @@ async fn main() {
         ("history", Some(sub)) => commands::history(sub).await,
         ("open", Some(sub)) => commands::open(sub).await,
         ("random", Some(sub)) => commands::random(sub).await,
+        ("config", Some(sub)) => commands::config(sub).await,
         _ => async { Ok(()) }.await,
     };
 

@@ -23,12 +23,14 @@ pub async fn get(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
 
     get_and_create_problem(id, host_name).await?;
 
-    match cmd.value_of("language") {
-        Some(l) => {
-            let lang = Language::from_file_ext(l);
-            init_file(&cfg, id, &lang)?;
-        },
-        None => {},
+    let lang = if let Some(l) = cmd.value_of("language") {
+        Some(Language::from_file_ext(l))
+    } else {
+        cfg.get_default_lang()
+    };
+
+    if let Some(l) = lang {
+        init_file(&cfg, id, &l)?;
     }
 
     println!("{} problem \"{}\"", "created".bright_green(), id);
