@@ -1,4 +1,5 @@
 use platform_dirs::AppDirs;
+use std::path::PathBuf;
 use ini::{Ini, Properties};
 use crate::StdErr;
 
@@ -10,6 +11,7 @@ use crate::StdErr;
 /// [rust-ini]: https://crates.io/crates/rust-ini
 pub struct Config {
     ini: Ini,
+    dir: PathBuf,
 }
 
 impl Config {
@@ -40,6 +42,7 @@ impl Config {
 
         Ok(Self {
             ini: cfg,
+            dir: app_dirs.config_dir,
         })
     }
 
@@ -136,6 +139,11 @@ impl Config {
             Some(u) => Ok(u),
             None => return Err("could not find login url under [kattis] in .kattisrc".into()),
         }
+    }
+
+    /// Retrieves the path to the directory containing user-defined templates.
+    pub fn get_templates_dir(&self) -> PathBuf {
+        self.dir.join("templates")
     }
 }
 
