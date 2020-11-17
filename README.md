@@ -63,6 +63,17 @@ kitty config --default-lang java
 ```
 Of course this works with any supported kitty language - not just Java.
 
+### Supported languages
+To see which languages are supported by kitty and how to refer to a specific language when using other kitty commands, run
+```sh
+$ kitty langs
+Name       Extension
+Java       java
+Python 3   py
+Rust       rs
+```
+These are the supported languages at the time of writing, but more will be added (or have potentially already been added).
+
 ## Installation
 ### Cargo
 You can install Kitty using cargo.
