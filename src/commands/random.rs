@@ -11,6 +11,8 @@ use crate::commands::get::get_and_create_problem;
 use crate::StdErr;
 
 pub async fn random(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
+    let lang_arg = cmd.value_of("language");
+
     let cfg = Config::load()?;
     let host_name = cfg.get_host_name()?;
 
@@ -39,7 +41,7 @@ pub async fn random(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         }
     }
 
-    get_and_create_problem(&problem.id, host_name).await?;
+    get_and_create_problem(&problem.id, host_name, lang_arg, &cfg).await?;
 
     Ok(())
 }
