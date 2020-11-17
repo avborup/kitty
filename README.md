@@ -57,6 +57,12 @@ $ kitty get --lang java
 ```
 which will create a file called `<PROBLEM ID>.java` that you can use.
 
+Alternatively, you can set the default language for kitty to use so that you don't need to specify the language argument every time you fetch a problem. Do this by running:
+```sh
+kitty config --default-lang java
+```
+Of course this works with any supported kitty language - not just Java.
+
 ## Installation
 ### Cargo
 You can install Kitty using cargo.
