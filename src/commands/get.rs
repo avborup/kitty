@@ -13,6 +13,7 @@ pub async fn get(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     // We can unwrap here because clap will exit automatically when this arg is
     // not present.
     let id = cmd.value_of("PROBLEM ID").unwrap();
+    let lang_arg = cmd.value_of("language");
 
     if !id.chars().all(char::is_alphanumeric) {
         return Err("problem id must only contain alphanumeric characters".into());
@@ -21,24 +22,12 @@ pub async fn get(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let cfg = Config::load()?;
     let host_name = cfg.get_host_name()?;
 
-    get_and_create_problem(id, host_name).await?;
-
-    let lang = if let Some(l) = cmd.value_of("language") {
-        Some(Language::from_file_ext(l))
-    } else {
-        cfg.get_default_lang()
-    };
-
-    if let Some(l) = lang {
-        init_file(&cfg, id, &l)?;
-    }
-
-    println!("{} problem \"{}\"", "created".bright_green(), id);
+    get_and_create_problem(id, host_name, lang_arg, &cfg).await?;
 
     Ok(())
 }
 
-pub async fn get_and_create_problem(id: &str, host_name: &str) -> Result<(), StdErr> {
+pub async fn get_and_create_problem(id: &str, host_name: &str, lang_arg: Option<&str>, cfg: &Config) -> Result<(), StdErr> {
     let p_url = format!("https://{}/problems/{}", host_name, id);
     let p_res = reqwest::get(&p_url).await?;
 
@@ -61,6 +50,18 @@ pub async fn get_and_create_problem(id: &str, host_name: &str) -> Result<(), Std
     }
 
     fetch_tests(&p_dir, &p_url).await?;
+
+    let lang = if let Some(l) = lang_arg {
+        Some(Language::from_file_ext(l))
+    } else {
+        cfg.get_default_lang()
+    };
+
+    if let Some(l) = lang {
+        init_file(&cfg, id, &l)?;
+    }
+
+    println!("{} problem \"{}\"", "created".bright_green(), id);
 
     Ok(())
 }

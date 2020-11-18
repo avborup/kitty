@@ -118,12 +118,12 @@ fn run_tests(compile_cmd: Option<Vec<String>>, run_cmd: &[String], tests: &Vec<(
             Err(_) => return Err("failed to wait for program output".into()),
         };
 
-        if output.status.success() {
-            let stdout = match String::from_utf8(output.stdout) {
-                Ok(s) => s,
-                Err(_) => return Err("program output (stdout) contained invalid UTF-8".into()),
-            };
+        let stdout = match String::from_utf8(output.stdout) {
+            Ok(s) => s,
+            Err(_) => return Err("program output (stdout) contained invalid UTF-8".into()),
+        };
 
+        if output.status.success() {
             let ans_str = ans.trim().replace("\r\n", "\n");
             let out_str = stdout.trim().replace("\r\n", "\n");
 
@@ -143,7 +143,7 @@ fn run_tests(compile_cmd: Option<Vec<String>>, run_cmd: &[String], tests: &Vec<(
                 Err(_) => return Err("program output (stderr) contained invalid UTF-8".into()),
             };
 
-            println!("{}:\n{}\n", "program error".bright_red(), stderr.trim());
+            println!("{}:\n{}\n{}\n", "program error".bright_red(), stdout.trim(), stderr.trim());
         }
     }
 

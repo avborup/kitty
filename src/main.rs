@@ -22,6 +22,7 @@ async fn main() {
         ("open", Some(sub)) => commands::open(sub).await,
         ("random", Some(sub)) => commands::random(sub).await,
         ("config", Some(sub)) => commands::config(sub).await,
+        ("langs", Some(sub)) => commands::langs(sub).await,
         _ => async { Ok(()) }.await,
     };
 

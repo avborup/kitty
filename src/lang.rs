@@ -98,6 +98,15 @@ impl Language {
             Python | Rust | Unknown => false,
         }
     }
+
+    /// Returns an iterator over all `Language` variants except `Unknown`.
+    pub fn all() -> impl Iterator<Item = Language> {
+        [
+            Java,
+            Python,
+            Rust,
+        ].iter().copied()
+    }
 }
 
 impl fmt::Display for Language {

@@ -126,6 +126,7 @@ async fn show_submission_status(kc: &KattisClient, creds: Credentials, submissio
     let mut fail = None;
     let mut num_passed;
     let mut num_failed;
+    let mut runtime_str;
 
     loop {
         // For some odd and godforsaken reason, we must log in before every request.
@@ -165,6 +166,12 @@ async fn show_submission_status(kc: &KattisClient, creds: Credentials, submissio
             thread::sleep(SLEEP_DURATION);
             continue;
         }
+
+        let runtime_selector = Selector::parse("td.runtime").unwrap();
+        runtime_str = doc.select(&runtime_selector)
+            .next()
+            .and_then(|el| Some(el.text().collect::<String>().to_lowercase()))
+            .unwrap_or(String::new());
 
         let test_selector = Selector::parse(".testcases > span").unwrap();
         let mut tests = Vec::new();
@@ -229,8 +236,10 @@ async fn show_submission_status(kc: &KattisClient, creds: Credentials, submissio
         TestCase::Rejected(r) => Some(format!("\nreason: {}.", r.bright_red())),
         _ => None,
     }).unwrap_or(String::new());
+    runtime_str.retain(|c| !c.is_whitespace());
 
-    println!("\n\nsubmission result: {}. {} passed; {} failed.{}", result_str, num_passed, num_failed, suffix);
+    println!("\n\nsubmission result: {}. {} passed; {} failed. {}.{}",
+             result_str, num_passed, num_failed, runtime_str, suffix);
 
     Ok(())
 }
