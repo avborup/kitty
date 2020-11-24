@@ -1,14 +1,14 @@
-use clap::ArgMatches;
-use scraper::{Html, Selector, ElementRef};
-use regex::Regex;
-use rand::thread_rng;
-use rand::seq::SliceRandom;
-use colored::Colorize;
-use std::io::{self, Write};
+use crate::commands::get::get_and_create_problem;
 use crate::config::Config;
 use crate::kattis_client::KattisClient;
-use crate::commands::get::get_and_create_problem;
 use crate::StdErr;
+use clap::ArgMatches;
+use colored::Colorize;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
+use regex::Regex;
+use scraper::{ElementRef, Html, Selector};
+use std::io::{self, Write};
 
 pub async fn random(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let lang_arg = cmd.value_of("language");
@@ -20,12 +20,16 @@ pub async fn random(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let mut rng = thread_rng();
     let problem = match problems.choose(&mut rng) {
         Some(p) => p,
-        None => return Err("could not find a random problem".into())
+        None => return Err("could not find a random problem".into()),
     };
 
     println!("{}:    {}", "Problem".bright_cyan(), problem.id);
     println!("{}: {}", "Difficulty".bright_cyan(), problem.difficulty);
-    println!("{}:        {}", "URL".bright_cyan(), format!("https://{}/problems/{}", &host_name, problem.id).underline());
+    println!(
+        "{}:        {}",
+        "URL".bright_cyan(),
+        format!("https://{}/problems/{}", &host_name, problem.id).underline()
+    );
 
     if !cmd.is_present("yes") {
         print!("Do you want to fetch this problem? (y/n): ");
@@ -53,7 +57,10 @@ struct SimpleProblem {
     difficulty: String,
 }
 
-async fn get_front_page_problems(cmd: &ArgMatches<'_>, cfg: &Config) -> Result<Vec<SimpleProblem>, StdErr> {
+async fn get_front_page_problems(
+    cmd: &ArgMatches<'_>,
+    cfg: &Config,
+) -> Result<Vec<SimpleProblem>, StdErr> {
     let creds = cfg.get_credentials()?;
     let login_url = cfg.get_login_url()?;
     let host_name = cfg.get_host_name()?;
@@ -68,8 +75,11 @@ async fn get_front_page_problems(cmd: &ArgMatches<'_>, cfg: &Config) -> Result<V
     };
 
     let kc = KattisClient::new()?;
-    let query = format!("order={}&dir={}&show_solved=off&show_tried=off&show_untried=on",
-                        sort_by, cmd.value_of("direction").unwrap());
+    let query = format!(
+        "order={}&dir={}&show_solved=off&show_tried=off&show_untried=on",
+        sort_by,
+        cmd.value_of("direction").unwrap()
+    );
     let url = format!("https://{}/problems?{}", host_name, query);
 
     kc.login(creds, login_url).await?;
@@ -77,7 +87,11 @@ async fn get_front_page_problems(cmd: &ArgMatches<'_>, cfg: &Config) -> Result<V
 
     let status = res.status();
     if !status.is_success() {
-        return Err(format!("failed to get problems from kattis (http status code {})", status).into());
+        return Err(format!(
+            "failed to get problems from kattis (http status code {})",
+            status
+        )
+        .into());
     }
 
     let html = match res.text().await {
@@ -98,7 +112,8 @@ async fn get_front_page_problems(cmd: &ArgMatches<'_>, cfg: &Config) -> Result<V
             None => continue,
         };
         let name: String = name_el.text().collect();
-        let id_match = name_el.value()
+        let id_match = name_el
+            .value()
             .attr("href")
             .and_then(|a| id_regex.captures(a))
             .and_then(|c| c.get(1));
@@ -113,7 +128,11 @@ async fn get_front_page_problems(cmd: &ArgMatches<'_>, cfg: &Config) -> Result<V
             None => continue,
         };
 
-        problems.push(SimpleProblem { name, id, difficulty });
+        problems.push(SimpleProblem {
+            name,
+            id,
+            difficulty,
+        });
     }
 
     Ok(problems)

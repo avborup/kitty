@@ -1,11 +1,11 @@
-use std::path::PathBuf;
-use std::io::{Read, Write};
-use clap::ArgMatches;
-use std::process::{Command, Stdio};
-use std::fs::{self, File};
-use colored::Colorize;
 use crate::problem::Problem;
 use crate::StdErr;
+use clap::ArgMatches;
+use colored::Colorize;
+use std::fs::{self, File};
+use std::io::{Read, Write};
+use std::path::PathBuf;
+use std::process::{Command, Stdio};
 
 const CHECKBOX: &'static str = "\u{2705}"; // Green checkbox emoji
 const CROSSMARK: &'static str = "\u{274C}"; // Red X emoji
@@ -34,7 +34,11 @@ pub async fn test(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     Ok(())
 }
 
-fn run_tests(compile_cmd: Option<Vec<String>>, run_cmd: &[String], tests: &Vec<(PathBuf, PathBuf)>) -> Result<(), StdErr> {
+fn run_tests(
+    compile_cmd: Option<Vec<String>>,
+    run_cmd: &[String],
+    tests: &Vec<(PathBuf, PathBuf)>,
+) -> Result<(), StdErr> {
     if let Some(cmd) = compile_cmd {
         let mut compile_parts = cmd.iter();
         // We always define commands ourselves in this source code, so we can
@@ -43,8 +47,7 @@ fn run_tests(compile_cmd: Option<Vec<String>>, run_cmd: &[String], tests: &Vec<(
         let compile_args: Vec<_> = compile_parts.collect();
 
         let mut command = Command::new(compile_prog);
-        command.args(&compile_args)
-            .stderr(Stdio::piped());
+        command.args(&compile_args).stderr(Stdio::piped());
 
         let child = match command.spawn() {
             Ok(c) => c,
@@ -91,7 +94,8 @@ fn run_tests(compile_cmd: Option<Vec<String>>, run_cmd: &[String], tests: &Vec<(
         let ans = fs::read_to_string(test_ans)?;
 
         let mut command = Command::new(run_prog);
-        command.args(&run_args)
+        command
+            .args(&run_args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
@@ -108,7 +112,7 @@ fn run_tests(compile_cmd: Option<Vec<String>>, run_cmd: &[String], tests: &Vec<(
             };
 
             match child_stdin.write_all(&in_buf) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(_) => return Err("failed to write to stdin of program".into()),
             }
         }
@@ -132,8 +136,14 @@ fn run_tests(compile_cmd: Option<Vec<String>>, run_cmd: &[String], tests: &Vec<(
             } else {
                 fails += 1;
 
-                println!("{}\n{}\n{}\n\n{}\n{}\n",
-                         CROSSMARK, "Expected:".underline(), ans_str, "Actual:".underline(), out_str);
+                println!(
+                    "{}\n{}\n{}\n\n{}\n{}\n",
+                    CROSSMARK,
+                    "Expected:".underline(),
+                    ans_str,
+                    "Actual:".underline(),
+                    out_str
+                );
             }
         } else {
             fails += 1;
@@ -143,13 +153,25 @@ fn run_tests(compile_cmd: Option<Vec<String>>, run_cmd: &[String], tests: &Vec<(
                 Err(_) => return Err("program output (stderr) contained invalid UTF-8".into()),
             };
 
-            println!("{}:\n{}\n{}\n", "program error".bright_red(), stdout.trim(), stderr.trim());
+            println!(
+                "{}:\n{}\n{}\n",
+                "program error".bright_red(),
+                stdout.trim(),
+                stderr.trim()
+            );
         }
     }
 
-    let test_result = if fails == 0 { "ok".bright_green() } else { "failed".bright_red() };
+    let test_result = if fails == 0 {
+        "ok".bright_green()
+    } else {
+        "failed".bright_red()
+    };
     let num_passed = tests.len() - fails;
-    println!("\ntest result: {}. {} passed; {} failed.", test_result, num_passed, fails);
+    println!(
+        "\ntest result: {}. {} passed; {} failed.",
+        test_result, num_passed, fails
+    );
 
     Ok(())
 }

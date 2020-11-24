@@ -1,7 +1,7 @@
+use crate::lang::Language;
+use crate::StdErr;
 use clap::ArgMatches;
 use colored::Colorize;
-use crate::StdErr;
-use crate::lang::Language;
 
 pub async fn langs(_cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let mut langs: Vec<(String, String)> = Language::all()

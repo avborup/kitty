@@ -1,8 +1,8 @@
-use clap::ArgMatches;
-use scraper::{Html, Selector};
-use crate::StdErr;
 use crate::config::Config;
 use crate::kattis_client::KattisClient;
+use crate::StdErr;
+use clap::ArgMatches;
+use scraper::{Html, Selector};
 
 const CHECKBOX: &'static str = "\u{2705}"; // Green checkbox emoji
 const CROSSMARK: &'static str = "\u{274C}"; // Red X emoji
@@ -17,7 +17,11 @@ pub async fn history(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let kc = KattisClient::new()?;
     let history = get_history(&kc, &cfg).await?;
 
-    let n = if cmd.is_present("all") { history.len() } else { count };
+    let n = if cmd.is_present("all") {
+        history.len()
+    } else {
+        count
+    };
     for submission in history.iter().take(n) {
         println!("{} {}", submission.status_symbol, submission.title);
     }
@@ -40,7 +44,11 @@ async fn get_history(kc: &KattisClient, cfg: &Config) -> Result<Vec<Submission>,
 
     let status = res.status();
     if !status.is_success() {
-        return Err(format!("failed to retrieve history from kattis (http status code {})", status).into());
+        return Err(format!(
+            "failed to retrieve history from kattis (http status code {})",
+            status
+        )
+        .into());
     }
 
     let html = match res.text().await {
@@ -59,10 +67,17 @@ async fn get_history(kc: &KattisClient, cfg: &Config) -> Result<Vec<Submission>,
             Some(t) => t.text().collect(),
             None => continue,
         };
-        let status_symbol = if row.select(&success_selector).next().is_some() { CHECKBOX } else { CROSSMARK }
-            .to_string();
+        let status_symbol = if row.select(&success_selector).next().is_some() {
+            CHECKBOX
+        } else {
+            CROSSMARK
+        }
+        .to_string();
 
-        submissions.push(Submission { title, status_symbol });
+        submissions.push(Submission {
+            title,
+            status_symbol,
+        });
     }
 
     Ok(submissions)

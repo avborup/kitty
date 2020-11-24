@@ -1,10 +1,10 @@
-use std::path::PathBuf;
-use std::fs;
-use std::io;
-use platform_dirs::AppDirs;
-use ini::{Ini, Properties, SectionSetter};
 use crate::lang::Language;
 use crate::StdErr;
+use ini::{Ini, Properties, SectionSetter};
+use platform_dirs::AppDirs;
+use std::fs;
+use std::io;
+use std::path::PathBuf;
 
 /// A configuration interaction layer.
 ///
@@ -174,7 +174,7 @@ impl Config {
     fn get_kitty_section_mut(&mut self) -> SectionSetter {
         self.ini.with_section(Some("kitty"))
     }
- 
+
     /// Writes the config to the config file.
     pub fn save(&self) -> Result<(), StdErr> {
         self.ini.write_to_file(&self.file)?;

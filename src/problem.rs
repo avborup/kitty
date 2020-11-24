@@ -1,10 +1,10 @@
-use std::path::{Path, PathBuf};
-use std::env;
-use std::io;
-use std::collections::HashMap;
-use clap::ArgMatches;
 use crate::lang::Language;
 use crate::StdErr;
+use clap::ArgMatches;
+use std::collections::HashMap;
+use std::env;
+use std::io;
+use std::path::{Path, PathBuf};
 
 fn path_str(p: &PathBuf) -> &str {
     p.to_str().expect("path did not contain valid unicode")
@@ -48,14 +48,24 @@ impl Problem {
         };
 
         match lang {
-            Language::Unknown => return Err(match lang_arg {
-                Some(l) => format!("kitty doesn't know how to handle {} files", l),
-                None => "kitty doesn't know the file extension of the given source file".to_string(),
-            }.into()),
-            _ => {},
+            Language::Unknown => {
+                return Err(match lang_arg {
+                    Some(l) => format!("kitty doesn't know how to handle {} files", l),
+                    None => {
+                        "kitty doesn't know the file extension of the given source file".to_string()
+                    }
+                }
+                .into())
+            }
+            _ => {}
         }
 
-        Ok(Self { name, path, file, lang })
+        Ok(Self {
+            name,
+            path,
+            file,
+            lang,
+        })
     }
 
     pub fn get_path(path_arg: &str) -> Result<PathBuf, StdErr> {
@@ -71,7 +81,7 @@ impl Problem {
         let path_str = path.to_str().expect("path did not contain valid unicode");
 
         if !path.exists() {
-             return Err(format!("not found: {}", path_str).into());
+            return Err(format!("not found: {}", path_str).into());
         }
 
         if !path.is_dir() {
@@ -82,7 +92,9 @@ impl Problem {
     }
 
     fn path_str(&self) -> &str {
-        self.path.to_str().expect("path did not contain valid unicode")
+        self.path
+            .to_str()
+            .expect("path did not contain valid unicode")
     }
 
     fn get_valid_source_files(dir: &PathBuf) -> io::Result<Vec<PathBuf>> {
@@ -105,7 +117,7 @@ impl Problem {
             };
 
             match Language::from_file_ext(ext.to_lowercase().as_str()) {
-                Language::Unknown => {},
+                Language::Unknown => {}
                 _ => sources.push(path),
             };
         }
@@ -119,7 +131,9 @@ impl Problem {
         if files.len() == 0 {
             return Err(format!("no source files found in {}", path_str(&dir)).into());
         } else if files.len() > 1 && file_arg.is_none() {
-            return Err("multiple source files found - pass the correct source file as an argument".into());
+            return Err(
+                "multiple source files found - pass the correct source file as an argument".into(),
+            );
         }
 
         let file_path = if let Some(file) = file_arg {
@@ -160,7 +174,8 @@ impl Problem {
                     None => continue,
                 },
                 None => continue,
-            }.to_lowercase();
+            }
+            .to_lowercase();
 
             // We can unwrap because the file extension check would ensure
             // that the file was skipped if it did not have a valid name
@@ -194,7 +209,14 @@ impl Problem {
 
     pub fn get_main_class(&self) -> Option<String> {
         if self.lang.has_main_class() {
-            Some(self.file.file_stem().unwrap().to_str().expect("file name contained invalid unicode").to_string())
+            Some(
+                self.file
+                    .file_stem()
+                    .unwrap()
+                    .to_str()
+                    .expect("file name contained invalid unicode")
+                    .to_string(),
+            )
         } else {
             None
         }

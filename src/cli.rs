@@ -1,4 +1,4 @@
-use clap::{App, Arg, SubCommand, AppSettings, crate_version, crate_authors};
+use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
 
 pub fn init() -> App<'static, 'static> {
     App::new("kitty")
