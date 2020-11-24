@@ -3,7 +3,7 @@ use crate::StdErr;
 use reqwest::multipart::Form;
 use reqwest::{Client, Response};
 
-pub const USER_AGENT: &'static str = env!("CARGO_PKG_NAME");
+pub const USER_AGENT: &str = env!("CARGO_PKG_NAME");
 
 pub struct KattisClient {
     pub client: Client,

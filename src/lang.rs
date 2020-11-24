@@ -61,7 +61,7 @@ impl Language {
             Rust => Some(vec!["rustc", "--out-dir", dir_path_str, path_str]),
             Unknown => None,
         }
-        .and_then(|v| Some(v.iter().map(|s| s.to_string()).collect::<Vec<String>>()));
+        .map(|v| v.iter().map(|s| s.to_string()).collect::<Vec<String>>());
 
         let exec_path = match self {
             Java => path.with_extension(""),

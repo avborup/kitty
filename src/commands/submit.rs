@@ -13,8 +13,8 @@ use std::io::{self, Write};
 use std::thread;
 use std::time::Duration;
 
-const CHECKBOX: &'static str = "\u{2705}"; // Green checkbox emoji
-const CROSSMARK: &'static str = "\u{274C}"; // Red X emoji
+const CHECKBOX: &str = "\u{2705}"; // Green checkbox emoji
+const CROSSMARK: &str = "\u{274C}"; // Red X emoji
 const SLEEP_DURATION: Duration = Duration::from_secs(1);
 
 pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
@@ -36,7 +36,7 @@ pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         io::stdout().flush().expect("failed to flush stdout");
 
         let mut input = String::new();
-        if let Err(_) = io::stdin().read_line(&mut input) {
+        if io::stdin().read_line(&mut input).is_err() {
             return Err("failed to read input".into());
         }
 
@@ -91,10 +91,7 @@ async fn submit_problem(
     let form = Form::new()
         .text("problem", problem.name())
         .text("language", problem.lang().to_string())
-        .text(
-            "mainclass",
-            problem.get_main_class().unwrap_or(String::new()),
-        )
+        .text("mainclass", problem.get_main_class().unwrap_or_default())
         .part("sub_file[]", file_part)
         .text("submit_ctr", "2")
         .text("submit", "true")
@@ -120,7 +117,7 @@ async fn submit_problem(
     let id = re
         .captures(&content)
         .and_then(|c| c.get(1))
-        .and_then(|i| Some(i.as_str().to_string()));
+        .map(|i| i.as_str().to_string());
 
     Ok(id)
 }
@@ -191,8 +188,8 @@ async fn show_submission_status(
         runtime_str = doc
             .select(&runtime_selector)
             .next()
-            .and_then(|el| Some(el.text().collect::<String>().to_lowercase()))
-            .unwrap_or(String::new());
+            .map(|el| el.text().collect::<String>().to_lowercase())
+            .unwrap_or_default();
 
         let test_selector = Selector::parse(".testcases > span").unwrap();
         let mut tests = Vec::new();
@@ -212,12 +209,12 @@ async fn show_submission_status(
                     .attr("title")
                     .and_then(|t| fail_reason_re.captures(t))
                     .and_then(|c| c.get(1))
-                    .and_then(|i| Some(i.as_str().trim().to_lowercase()))
-                    .unwrap_or(String::from("unknown"));
+                    .map(|i| i.as_str().trim().to_lowercase())
+                    .unwrap_or_else(|| String::from("unknown"));
                 let rej = TestCase::Rejected(reason);
 
                 // We only show the first failure reason
-                if let None = fail {
+                if fail.is_none() {
                     fail = Some(rej.clone());
                 }
 
@@ -246,7 +243,7 @@ async fn show_submission_status(
         }
         io::stdout().flush().expect("failed to flush stdout");
 
-        if let Some(_) = fail {
+        if fail.is_some() {
             break;
         }
 
@@ -257,7 +254,7 @@ async fn show_submission_status(
         thread::sleep(SLEEP_DURATION);
     }
 
-    let result_str = if let Some(_) = fail {
+    let result_str = if fail.is_some() {
         "failed".bright_red()
     } else {
         "ok".bright_green()
@@ -267,7 +264,7 @@ async fn show_submission_status(
             TestCase::Rejected(r) => Some(format!("\nreason: {}.", r.bright_red())),
             _ => None,
         })
-        .unwrap_or(String::new());
+        .unwrap_or_default();
     runtime_str.retain(|c| !c.is_whitespace());
 
     println!(

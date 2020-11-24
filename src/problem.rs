@@ -47,17 +47,14 @@ impl Problem {
             None => Language::from_file(&file)?,
         };
 
-        match lang {
-            Language::Unknown => {
-                return Err(match lang_arg {
-                    Some(l) => format!("kitty doesn't know how to handle {} files", l),
-                    None => {
-                        "kitty doesn't know the file extension of the given source file".to_string()
-                    }
+        if let Language::Unknown = lang {
+            return Err(match lang_arg {
+                Some(l) => format!("kitty doesn't know how to handle {} files", l),
+                None => {
+                    "kitty doesn't know the file extension of the given source file".to_string()
                 }
-                .into())
             }
-            _ => {}
+            .into());
         }
 
         Ok(Self {
@@ -128,7 +125,7 @@ impl Problem {
     pub fn get_source_file(dir: &PathBuf, file_arg: Option<&str>) -> Result<PathBuf, StdErr> {
         let files = Self::get_valid_source_files(dir)?;
 
-        if files.len() == 0 {
+        if files.is_empty() {
             return Err(format!("no source files found in {}", path_str(&dir)).into());
         } else if files.len() > 1 && file_arg.is_none() {
             return Err(

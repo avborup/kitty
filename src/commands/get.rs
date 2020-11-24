@@ -82,7 +82,7 @@ pub async fn get_and_create_problem(
 async fn fetch_tests(parent_dir: &PathBuf, problem_url: &str) -> Result<(), StdErr> {
     let t_dir = parent_dir.join("test");
     let t_dir = t_dir.as_path();
-    if let Err(_) = fs::create_dir(t_dir) {
+    if fs::create_dir(t_dir).is_err() {
         return Err("failed to create problem directory at this location".into());
     }
 
@@ -102,7 +102,7 @@ async fn fetch_tests(parent_dir: &PathBuf, problem_url: &str) -> Result<(), StdE
         Err(_) => return Err("failed to create temporary file for storing test samples".into()),
     };
 
-    if let Err(_) = tmpfile.write_all(&z_res.bytes().await?) {
+    if tmpfile.write_all(&z_res.bytes().await?).is_err() {
         return Err("failed to write test samples to temporary zip file".into());
     }
 
@@ -129,11 +129,11 @@ async fn fetch_tests(parent_dir: &PathBuf, problem_url: &str) -> Result<(), StdE
         };
 
         let mut content = String::new();
-        if let Err(_) = file.read_to_string(&mut content) {
+        if file.read_to_string(&mut content).is_err() {
             return Err("failed to read sample file from zip".into());
         }
 
-        if let Err(_) = dest.write_all(&content.as_bytes()) {
+        if dest.write_all(&content.as_bytes()).is_err() {
             return Err(format!("failed to write to file {}", &name).into());
         }
     }
@@ -177,7 +177,7 @@ pub fn init_file(cfg: &Config, problem_id: &str, lang: &Language) -> Result<(), 
     let problem_file_name = format!("{}.{}", problem_id, lang.file_ext());
     let problem_file = p_dir.join(&problem_file_name);
 
-    if let Err(_) = fs::write(problem_file, template) {
+    if fs::write(problem_file, template).is_err() {
         return Err(format!("failed to create template file {}", template_file_name).into());
     }
 

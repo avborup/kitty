@@ -7,8 +7,8 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
-const CHECKBOX: &'static str = "\u{2705}"; // Green checkbox emoji
-const CROSSMARK: &'static str = "\u{274C}"; // Red X emoji
+const CHECKBOX: &str = "\u{2705}"; // Green checkbox emoji
+const CROSSMARK: &str = "\u{274C}"; // Red X emoji
 
 pub async fn test(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let problem = Problem::from_args(cmd)?;
@@ -37,7 +37,7 @@ pub async fn test(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
 fn run_tests(
     compile_cmd: Option<Vec<String>>,
     run_cmd: &[String],
-    tests: &Vec<(PathBuf, PathBuf)>,
+    tests: &[(PathBuf, PathBuf)],
 ) -> Result<(), StdErr> {
     if let Some(cmd) = compile_cmd {
         let mut compile_parts = cmd.iter();

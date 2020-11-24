@@ -30,7 +30,7 @@ pub async fn open(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         }
     };
 
-    if id.len() == 0 {
+    if id.is_empty() {
         return Err(format!("\"{}\" is not a valid problem id", &id).into());
     }
 
@@ -38,7 +38,7 @@ pub async fn open(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let host_name = cfg.get_host_name()?;
     let url = format!("https://{}/problems/{}", host_name, &id);
 
-    if let Err(_) = webbrowser::open(&url) {
+    if webbrowser::open(&url).is_err() {
         return Err(format!("failed to open {} in your browser", &url).into());
     }
 

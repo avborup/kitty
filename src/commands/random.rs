@@ -36,7 +36,7 @@ pub async fn random(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         io::stdout().flush().expect("failed to flush stdout");
 
         let mut input = String::new();
-        if let Err(_) = io::stdin().read_line(&mut input) {
+        if io::stdin().read_line(&mut input).is_err() {
             return Err("failed to read input".into());
         }
 

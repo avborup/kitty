@@ -4,8 +4,8 @@ use crate::StdErr;
 use clap::ArgMatches;
 use scraper::{Html, Selector};
 
-const CHECKBOX: &'static str = "\u{2705}"; // Green checkbox emoji
-const CROSSMARK: &'static str = "\u{274C}"; // Red X emoji
+const CHECKBOX: &str = "\u{2705}"; // Green checkbox emoji
+const CROSSMARK: &str = "\u{274C}"; // Red X emoji
 
 pub async fn history(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let count = match cmd.value_of("count").unwrap().parse() {

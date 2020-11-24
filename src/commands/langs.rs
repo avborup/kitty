@@ -8,7 +8,7 @@ pub async fn langs(_cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         .map(|l| (l.to_string(), l.file_ext().to_string()))
         .collect();
 
-    langs.sort_by(|a, b| a.cmp(b));
+    langs.sort();
 
     println!("{:9}  {}", "Name".bright_cyan(), "Extension".bright_cyan());
     for (name, ext) in langs {
