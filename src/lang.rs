@@ -14,6 +14,7 @@ pub enum Language {
     Java,
     Python,
     Rust,
+    Haskell,
     Unknown,
 }
 
@@ -23,6 +24,7 @@ impl Language {
             "java" => Java,
             "py" => Python,
             "rs" => Rust,
+            "hs" => Haskell,
             _ => Unknown,
         }
     }
@@ -32,6 +34,7 @@ impl Language {
             Java => "java",
             Python => "py",
             Rust => "rs",
+            Haskell => "hs",
             _ => "",
         }
     }
@@ -59,6 +62,7 @@ impl Language {
             Java => Some(vec!["javac", path_str]),
             Python => None,
             Rust => Some(vec!["rustc", "--out-dir", dir_path_str, path_str]),
+            Haskell => Some(vec!["ghc", "-O2", "-ferror-spans", "-threaded", "-rtsopts", path_str]),
             Unknown => None,
         }.and_then(|v| Some(v.iter().map(|s| s.to_string()).collect::<Vec<String>>()));
 
@@ -66,6 +70,7 @@ impl Language {
             Java => path.with_extension(""),
             Python => path.to_owned(),
             Rust => path.with_extension(EXEC_EXT),
+            Haskell => path.with_extension(""),
             Unknown => PathBuf::new(),
         };
 
@@ -86,6 +91,7 @@ impl Language {
             },
             Python => vec!["python", file_path.to_str().unwrap()],
             Rust => vec![file_path.to_str().unwrap()],
+            Haskell => vec![file_path.to_str().unwrap()],
             Unknown => return None,
         };
 
@@ -95,7 +101,7 @@ impl Language {
     pub fn has_main_class(&self) -> bool {
         match self {
             Java => true,
-            Python | Rust | Unknown => false,
+            Python | Rust | Haskell | Unknown => false,
         }
     }
 
@@ -105,6 +111,7 @@ impl Language {
             Java,
             Python,
             Rust,
+            Haskell,
         ].iter().copied()
     }
 }
@@ -115,6 +122,7 @@ impl fmt::Display for Language {
             Java => "Java",
             Python => "Python 3",
             Rust => "Rust",
+            Haskell => "Haskell",
             Unknown => "Unknown",
         };
 
