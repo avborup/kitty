@@ -11,30 +11,30 @@ const EXEC_EXT: &str = "";
 
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub enum Language {
+    Haskell,
     Java,
     Python,
     Rust,
-    Haskell,
     Unknown,
 }
 
 impl Language {
     pub fn from_file_ext(ext: &str) -> Self {
         match ext {
+            "hs" => Haskell,
             "java" => Java,
             "py" => Python,
             "rs" => Rust,
-            "hs" => Haskell,
             _ => Unknown,
         }
     }
 
     pub fn file_ext(&self) -> &str {
         match self {
+            Haskell => "hs",
             Java => "java",
             Python => "py",
             Rust => "rs",
-            Haskell => "hs",
             _ => "",
         }
     }
@@ -59,19 +59,19 @@ impl Language {
         let dir_path_str = dir_path.to_str().expect("path contained invalid unicode");
 
         let cmd = match self {
+            Haskell => Some(vec!["ghc", "-O2", "-ferror-spans", "-threaded", "-rtsopts", path_str]),
             Java => Some(vec!["javac", path_str]),
             Python => None,
             Rust => Some(vec!["rustc", "--out-dir", dir_path_str, path_str]),
-            Haskell => Some(vec!["ghc", "-O2", "-ferror-spans", "-threaded", "-rtsopts", path_str]),
             Unknown => None,
         }
         .map(|v| v.iter().map(|s| s.to_string()).collect::<Vec<String>>());
 
         let exec_path = match self {
+            Haskell => path.with_extension(""),
             Java => path.with_extension(""),
             Python => path.to_owned(),
             Rust => path.with_extension(EXEC_EXT),
-            Haskell => path.with_extension(""),
             Unknown => PathBuf::new(),
         };
 
@@ -84,6 +84,7 @@ impl Language {
         dir_path.pop();
 
         let cmd = match self {
+            Haskell => vec![file_path.to_str().unwrap()],
             Java => {
                 let class_name = file_path.file_stem().unwrap().to_str().unwrap();
                 let class_path = dir_path.to_str().unwrap();
@@ -92,7 +93,6 @@ impl Language {
             }
             Python => vec!["python", file_path.to_str().unwrap()],
             Rust => vec![file_path.to_str().unwrap()],
-            Haskell => vec![file_path.to_str().unwrap()],
             Unknown => return None,
         };
 
@@ -102,7 +102,7 @@ impl Language {
     pub fn has_main_class(&self) -> bool {
         match self {
             Java => true,
-            Python | Rust | Haskell | Unknown => false,
+            Haskell | Python | Rust | Unknown => false,
         }
     }
 
@@ -115,10 +115,10 @@ impl Language {
 impl fmt::Display for Language {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let str = match self {
+            Haskell => "Haskell",
             Java => "Java",
             Python => "Python 3",
             Rust => "Rust",
-            Haskell => "Haskell",
             Unknown => "Unknown",
         };
 
