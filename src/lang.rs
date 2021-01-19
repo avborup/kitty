@@ -1,6 +1,6 @@
+use crate::StdErr;
 use std::fmt;
 use std::path::PathBuf;
-use crate::StdErr;
 use Language::*;
 
 #[cfg(target_os = "windows")]
@@ -64,7 +64,8 @@ impl Language {
             Rust => Some(vec!["rustc", "--out-dir", dir_path_str, path_str]),
             Haskell => Some(vec!["ghc", "-O2", "-ferror-spans", "-threaded", "-rtsopts", path_str]),
             Unknown => None,
-        }.and_then(|v| Some(v.iter().map(|s| s.to_string()).collect::<Vec<String>>()));
+        }
+        .map(|v| v.iter().map(|s| s.to_string()).collect::<Vec<String>>());
 
         let exec_path = match self {
             Java => path.with_extension(""),
@@ -88,7 +89,7 @@ impl Language {
                 let class_path = dir_path.to_str().unwrap();
 
                 vec!["java", "-cp", class_path, class_name]
-            },
+            }
             Python => vec!["python", file_path.to_str().unwrap()],
             Rust => vec![file_path.to_str().unwrap()],
             Haskell => vec![file_path.to_str().unwrap()],
@@ -107,12 +108,7 @@ impl Language {
 
     /// Returns an iterator over all `Language` variants except `Unknown`.
     pub fn all() -> impl Iterator<Item = Language> {
-        [
-            Java,
-            Python,
-            Rust,
-            Haskell,
-        ].iter().copied()
+        [Haskell, Java, Python, Rust].iter().copied()
     }
 }
 

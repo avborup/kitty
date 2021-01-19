@@ -2,10 +2,10 @@ use colored::Colorize;
 
 mod cli;
 mod commands;
-mod problem;
-mod lang;
 mod config;
 mod kattis_client;
+mod lang;
+mod problem;
 
 type StdErr = Box<dyn std::error::Error>;
 
