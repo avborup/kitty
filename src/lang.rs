@@ -59,7 +59,14 @@ impl Language {
         let dir_path_str = dir_path.to_str().expect("path contained invalid unicode");
 
         let cmd = match self {
-            Haskell => Some(vec!["ghc", "-O2", "-ferror-spans", "-threaded", "-rtsopts", path_str]),
+            Haskell => Some(vec![
+                "ghc",
+                "-O2",
+                "-ferror-spans",
+                "-threaded",
+                "-rtsopts",
+                path_str,
+            ]),
             Java => Some(vec!["javac", path_str]),
             Python => None,
             Rust => Some(vec!["rustc", "--out-dir", dir_path_str, path_str]),
