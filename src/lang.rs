@@ -75,7 +75,7 @@ impl Language {
         .map(|v| v.iter().map(|s| s.to_string()).collect::<Vec<String>>());
 
         let exec_path = match self {
-            Haskell => path.with_extension(""),
+            Haskell => path.with_extension(EXEC_EXT),
             Java => path.with_extension(""),
             Python => path.to_owned(),
             Rust => path.with_extension(EXEC_EXT),
