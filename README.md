@@ -94,5 +94,8 @@ $ PATH=~/bin:$PATH
 ```
 At this point, you should be able to freely run `kitty` anywhere on your system. Beware though; using this method, you will not have kitty in your PATH when you restart your terminal. To add it permanently, you can `export` the `bin` directory in your `.bashrc`, `.zshrc` or whichever terminal config file you use.
 
+## Updating
+To update kitty, you can run `kitty update`.
+
 ## Feature requests
 Feel free to create a new issue if you have any problems or have any feature requests. Pull requests are also welcome.

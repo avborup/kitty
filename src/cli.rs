@@ -127,4 +127,9 @@ pub fn init() -> App<'static, 'static> {
                     .setting(AppSettings::DisableVersion)
                     .after_help("Whenever you need to provide a language as an argument to kitty (for example --lang when fetching commands), provide its extension exactly as shown in the output of this command.")
                    )
+        .subcommand(SubCommand::with_name("update")
+                    .about("Updates the local installation of kitty")
+                    .setting(AppSettings::DisableVersion)
+                    .after_help("The currently installed binary will be replaced with the one at https://github.com/KongBorup/kitty/releases/latest")
+                   )
 }

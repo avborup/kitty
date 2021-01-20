@@ -6,6 +6,7 @@ mod open;
 mod random;
 mod submit;
 mod test;
+mod update;
 
 pub use config::config;
 pub use get::get;
@@ -15,3 +16,4 @@ pub use open::open;
 pub use random::random;
 pub use submit::submit;
 pub use test::test;
+pub use update::update;
