@@ -2,10 +2,10 @@ use colored::Colorize;
 
 mod cli;
 mod commands;
-mod problem;
-mod lang;
 mod config;
 mod kattis_client;
+mod lang;
+mod problem;
 
 type StdErr = Box<dyn std::error::Error>;
 
@@ -23,6 +23,7 @@ async fn main() {
         ("random", Some(sub)) => commands::random(sub).await,
         ("config", Some(sub)) => commands::config(sub).await,
         ("langs", Some(sub)) => commands::langs(sub).await,
+        ("update", Some(sub)) => commands::update(sub).await,
         _ => async { Ok(()) }.await,
     };
 

@@ -1,13 +1,13 @@
+use crate::config::Config;
+use crate::lang::Language;
+use crate::StdErr;
 use clap::ArgMatches;
+use colored::Colorize;
 use std::env;
 use std::fs;
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
 use zip::ZipArchive;
-use colored::Colorize;
-use crate::config::Config;
-use crate::StdErr;
-use crate::lang::Language;
 
 pub async fn get(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     // We can unwrap here because clap will exit automatically when this arg is
@@ -27,7 +27,12 @@ pub async fn get(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     Ok(())
 }
 
-pub async fn get_and_create_problem(id: &str, host_name: &str, lang_arg: Option<&str>, cfg: &Config) -> Result<(), StdErr> {
+pub async fn get_and_create_problem(
+    id: &str,
+    host_name: &str,
+    lang_arg: Option<&str>,
+    cfg: &Config,
+) -> Result<(), StdErr> {
     let p_url = format!("https://{}/problems/{}", host_name, id);
     let p_res = reqwest::get(&p_url).await?;
 
@@ -35,7 +40,13 @@ pub async fn get_and_create_problem(id: &str, host_name: &str, lang_arg: Option<
     if !p_status.is_success() {
         match p_status.as_str() {
             "404" => return Err(format!("the problem \"{}\" does not exist", id).into()),
-            _ => return Err(format!("failed to fetch problem \"{}\" (http status code {})", id, p_status).into()),
+            _ => {
+                return Err(format!(
+                    "failed to fetch problem \"{}\" (http status code {})",
+                    id, p_status
+                )
+                .into())
+            }
         }
     }
 
@@ -44,9 +55,11 @@ pub async fn get_and_create_problem(id: &str, host_name: &str, lang_arg: Option<
 
     if let Err(e) = fs::create_dir(&p_dir) {
         return match e.kind() {
-            io::ErrorKind::AlreadyExists => Err("cannot create problem directory since it already exists".into()),
+            io::ErrorKind::AlreadyExists => {
+                Err("cannot create problem directory since it already exists".into())
+            }
             _ => Err("failed to create problem directory at this location".into()),
-        }
+        };
     }
 
     fetch_tests(&p_dir, &p_url).await?;
@@ -69,7 +82,7 @@ pub async fn get_and_create_problem(id: &str, host_name: &str, lang_arg: Option<
 async fn fetch_tests(parent_dir: &PathBuf, problem_url: &str) -> Result<(), StdErr> {
     let t_dir = parent_dir.join("test");
     let t_dir = t_dir.as_path();
-    if let Err(_) = fs::create_dir(t_dir) {
+    if fs::create_dir(t_dir).is_err() {
         return Err("failed to create problem directory at this location".into());
     }
 
@@ -81,7 +94,7 @@ async fn fetch_tests(parent_dir: &PathBuf, problem_url: &str) -> Result<(), StdE
         return match z_status.as_str() {
             "404" => Ok(()),
             _ => Err(format!("failed to fetch tests (http status code {})", z_status).into()),
-        }
+        };
     }
 
     let mut tmpfile = match tempfile::tempfile() {
@@ -89,7 +102,7 @@ async fn fetch_tests(parent_dir: &PathBuf, problem_url: &str) -> Result<(), StdE
         Err(_) => return Err("failed to create temporary file for storing test samples".into()),
     };
 
-    if let Err(_) = tmpfile.write_all(&z_res.bytes().await?) {
+    if tmpfile.write_all(&z_res.bytes().await?).is_err() {
         return Err("failed to write test samples to temporary zip file".into());
     }
 
@@ -116,11 +129,11 @@ async fn fetch_tests(parent_dir: &PathBuf, problem_url: &str) -> Result<(), StdE
         };
 
         let mut content = String::new();
-        if let Err(_) = file.read_to_string(&mut content) {
+        if file.read_to_string(&mut content).is_err() {
             return Err("failed to read sample file from zip".into());
         }
 
-        if let Err(_) = dest.write_all(&content.as_bytes()) {
+        if dest.write_all(&content.as_bytes()).is_err() {
             return Err(format!("failed to write to file {}", &name).into());
         }
     }
@@ -131,22 +144,27 @@ async fn fetch_tests(parent_dir: &PathBuf, problem_url: &str) -> Result<(), StdE
 pub fn init_file(cfg: &Config, problem_id: &str, lang: &Language) -> Result<(), StdErr> {
     if let Language::Unknown = lang {
         println!("kitty cannot handle the given language and will skip creating the file for you.");
-        return Ok(())
+        return Ok(());
     }
 
     let templates_dir = cfg.get_templates_dir();
 
     if !templates_dir.exists() {
-        println!("you have not created any templates yet. kitty will skip creating the file for you.");
-        return Ok(())
+        println!(
+            "you have not created any templates yet. kitty will skip creating the file for you."
+        );
+        return Ok(());
     }
 
     let template_file_name = format!("template.{}", lang.file_ext());
     let template_file = templates_dir.join(&template_file_name);
 
     if !template_file.exists() {
-        println!("{} does not exist. kitty will skip creating the file for you.", &template_file_name);
-        return Ok(())
+        println!(
+            "{} does not exist. kitty will skip creating the file for you.",
+            &template_file_name
+        );
+        return Ok(());
     }
 
     let template = match fs::read_to_string(&template_file) {
@@ -159,7 +177,7 @@ pub fn init_file(cfg: &Config, problem_id: &str, lang: &Language) -> Result<(), 
     let problem_file_name = format!("{}.{}", problem_id, lang.file_ext());
     let problem_file = p_dir.join(&problem_file_name);
 
-    if let Err(_) = fs::write(problem_file, template) {
+    if fs::write(problem_file, template).is_err() {
         return Err(format!("failed to create template file {}", template_file_name).into());
     }
 

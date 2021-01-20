@@ -1,17 +1,19 @@
-mod test;
+mod config;
 mod get;
-mod submit;
 mod history;
+mod langs;
 mod open;
 mod random;
-mod config;
-mod langs;
+mod submit;
+mod test;
+mod update;
 
-pub use test::test;
+pub use config::config;
 pub use get::get;
-pub use submit::submit;
 pub use history::history;
+pub use langs::langs;
 pub use open::open;
 pub use random::random;
-pub use config::config;
-pub use langs::langs;
+pub use submit::submit;
+pub use test::test;
+pub use update::update;

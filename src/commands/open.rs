@@ -1,8 +1,8 @@
-use clap::ArgMatches;
-use std::env;
-use colored::Colorize;
 use crate::config::Config;
 use crate::StdErr;
+use clap::ArgMatches;
+use colored::Colorize;
+use std::env;
 
 pub async fn open(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let id = match cmd.value_of("PROBLEM ID") {
@@ -11,7 +11,7 @@ pub async fn open(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
             s.retain(char::is_alphanumeric);
 
             s
-        },
+        }
         None => {
             let cwd = match env::current_dir() {
                 Ok(d) => d,
@@ -23,11 +23,14 @@ pub async fn open(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
                 None => return Err("failed to get name of current directory".into()),
             };
 
-            dir_name.to_str().expect("directory name contained invalid unicode").to_string()
-        },
+            dir_name
+                .to_str()
+                .expect("directory name contained invalid unicode")
+                .to_string()
+        }
     };
 
-    if id.len() == 0 {
+    if id.is_empty() {
         return Err(format!("\"{}\" is not a valid problem id", &id).into());
     }
 
@@ -35,11 +38,15 @@ pub async fn open(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let host_name = cfg.get_host_name()?;
     let url = format!("https://{}/problems/{}", host_name, &id);
 
-    if let Err(_) = webbrowser::open(&url) {
+    if webbrowser::open(&url).is_err() {
         return Err(format!("failed to open {} in your browser", &url).into());
     }
 
-    println!("{} {} in your browser", "opened".bright_green(), &url.underline());
+    println!(
+        "{} {} in your browser",
+        "opened".bright_green(),
+        &url.underline()
+    );
 
     Ok(())
 }

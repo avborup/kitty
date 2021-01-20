@@ -1,20 +1,20 @@
+use crate::config::{Config, Credentials};
+use crate::kattis_client::KattisClient;
+use crate::problem::Problem;
+use crate::StdErr;
 use clap::ArgMatches;
+use colored::Colorize;
+use regex::Regex;
 use reqwest::multipart::{Form, Part};
+use scraper::{Html, Selector};
+use selectors::attr::CaseSensitivity;
 use std::fs;
 use std::io::{self, Write};
 use std::thread;
 use std::time::Duration;
-use regex::Regex;
-use colored::Colorize;
-use scraper::{Html, Selector};
-use selectors::attr::CaseSensitivity;
-use crate::StdErr;
-use crate::problem::Problem;
-use crate::config::{Config, Credentials};
-use crate::kattis_client::KattisClient;
 
-const CHECKBOX: &'static str = "\u{2705}"; // Green checkbox emoji
-const CROSSMARK: &'static str = "\u{274C}"; // Red X emoji
+const CHECKBOX: &str = "\u{2705}"; // Green checkbox emoji
+const CROSSMARK: &str = "\u{274C}"; // Red X emoji
 const SLEEP_DURATION: Duration = Duration::from_secs(1);
 
 pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
@@ -24,7 +24,9 @@ pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let file_name = match file_path.file_name() {
         Some(f) => f,
         None => return Err("failed to get file name".into()),
-    }.to_str().expect("file path contained invalid unicode");
+    }
+    .to_str()
+    .expect("file path contained invalid unicode");
 
     if !cmd.is_present("yes") {
         println!("{}:  {}", "Problem".bright_cyan(), problem.name());
@@ -34,7 +36,7 @@ pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         io::stdout().flush().expect("failed to flush stdout");
 
         let mut input = String::new();
-        if let Err(_) = io::stdin().read_line(&mut input) {
+        if io::stdin().read_line(&mut input).is_err() {
             return Err("failed to read input".into());
         }
 
@@ -58,20 +60,28 @@ pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
 
     let submission_url = format!("{}/{}", cfg.get_submissions_url()?, &id);
 
-    println!("{} solution to {}", "submitted".bright_green(), &submission_url.underline());
+    println!(
+        "{} solution to {}",
+        "submitted".bright_green(),
+        &submission_url.underline()
+    );
 
     show_submission_status(&client, creds, &submission_url, login_url).await?;
 
     Ok(())
 }
 
-async fn submit_problem(kc: &KattisClient, problem: &Problem, submit_url: &str) -> Result<Option<String>, StdErr> {
+async fn submit_problem(
+    kc: &KattisClient,
+    problem: &Problem,
+    submit_url: &str,
+) -> Result<Option<String>, StdErr> {
     let file_path = problem.file();
     let file_name = file_path.file_name().unwrap().to_str().unwrap().to_string();
 
     let file_bytes = match fs::read(&file_path) {
         Ok(b) => b,
-        Err(_) => return Err("failed to read solution file".into())
+        Err(_) => return Err("failed to read solution file".into()),
     };
     let file_part = Part::bytes(file_bytes)
         .file_name(file_name)
@@ -81,16 +91,13 @@ async fn submit_problem(kc: &KattisClient, problem: &Problem, submit_url: &str) 
     let form = Form::new()
         .text("problem", problem.name())
         .text("language", problem.lang().to_string())
-        .text("mainclass", problem.get_main_class().unwrap_or(String::new()))
+        .text("mainclass", problem.get_main_class().unwrap_or_default())
         .part("sub_file[]", file_part)
         .text("submit_ctr", "2")
         .text("submit", "true")
         .text("script", "true");
 
-    let res = kc.client.post(submit_url)
-        .multipart(form)
-        .send()
-        .await?;
+    let res = kc.client.post(submit_url).multipart(form).send().await?;
 
     let status = res.status();
     if !status.is_success() {
@@ -107,9 +114,10 @@ async fn submit_problem(kc: &KattisClient, problem: &Problem, submit_url: &str) 
     }
 
     let re = Regex::new(r"ID: (\d+)").unwrap();
-    let id = re.captures(&content)
+    let id = re
+        .captures(&content)
         .and_then(|c| c.get(1))
-        .and_then(|i| Some(i.as_str().to_string()));
+        .map(|i| i.as_str().to_string());
 
     Ok(id)
 }
@@ -121,7 +129,12 @@ enum TestCase {
     Unfinished,
 }
 
-async fn show_submission_status(kc: &KattisClient, creds: Credentials, submission_url: &str, login_url: &str) -> Result<(), StdErr> {
+async fn show_submission_status(
+    kc: &KattisClient,
+    creds: Credentials,
+    submission_url: &str,
+    login_url: &str,
+) -> Result<(), StdErr> {
     let fail_reason_re = Regex::new(r"([\w ]+)$").unwrap();
     let mut fail = None;
     let mut num_passed;
@@ -135,7 +148,11 @@ async fn show_submission_status(kc: &KattisClient, creds: Credentials, submissio
 
         let status = res.status();
         if !status.is_success() {
-            return Err(format!("failed to fetch submission progress (http status code {})", status).into());
+            return Err(format!(
+                "failed to fetch submission progress (http status code {})",
+                status
+            )
+            .into());
         }
 
         let html = match res.text().await {
@@ -168,10 +185,11 @@ async fn show_submission_status(kc: &KattisClient, creds: Credentials, submissio
         }
 
         let runtime_selector = Selector::parse("td.runtime").unwrap();
-        runtime_str = doc.select(&runtime_selector)
+        runtime_str = doc
+            .select(&runtime_selector)
             .next()
-            .and_then(|el| Some(el.text().collect::<String>().to_lowercase()))
-            .unwrap_or(String::new());
+            .map(|el| el.text().collect::<String>().to_lowercase())
+            .unwrap_or_default();
 
         let test_selector = Selector::parse(".testcases > span").unwrap();
         let mut tests = Vec::new();
@@ -187,15 +205,16 @@ async fn show_submission_status(kc: &KattisClient, creds: Credentials, submissio
             } else if test_el.has_class("rejected", cs) {
                 num_failed += 1;
 
-                let reason = test_el.attr("title")
+                let reason = test_el
+                    .attr("title")
                     .and_then(|t| fail_reason_re.captures(t))
                     .and_then(|c| c.get(1))
-                    .and_then(|i| Some(i.as_str().trim().to_lowercase()))
-                    .unwrap_or(String::from("unknown"));
+                    .map(|i| i.as_str().trim().to_lowercase())
+                    .unwrap_or_else(|| String::from("unknown"));
                 let rej = TestCase::Rejected(reason);
 
                 // We only show the first failure reason
-                if let None = fail {
+                if fail.is_none() {
                     fail = Some(rej.clone());
                 }
 
@@ -207,7 +226,11 @@ async fn show_submission_status(kc: &KattisClient, creds: Credentials, submissio
             tests.push(test);
         }
 
-        print!("\rRunning tests ... {} of {}: ", num_passed + num_failed, tests.len());
+        print!(
+            "\rRunning tests ... {} of {}: ",
+            num_passed + num_failed,
+            tests.len()
+        );
 
         for test in &tests {
             let symbol = match test {
@@ -220,7 +243,7 @@ async fn show_submission_status(kc: &KattisClient, creds: Credentials, submissio
         }
         io::stdout().flush().expect("failed to flush stdout");
 
-        if let Some(_) = fail {
+        if fail.is_some() {
             break;
         }
 
@@ -231,15 +254,23 @@ async fn show_submission_status(kc: &KattisClient, creds: Credentials, submissio
         thread::sleep(SLEEP_DURATION);
     }
 
-    let result_str = if let Some(_) = fail { "failed".bright_red() } else { "ok".bright_green() };
-    let suffix = fail.and_then(|f| match f {
-        TestCase::Rejected(r) => Some(format!("\nreason: {}.", r.bright_red())),
-        _ => None,
-    }).unwrap_or(String::new());
+    let result_str = if fail.is_some() {
+        "failed".bright_red()
+    } else {
+        "ok".bright_green()
+    };
+    let suffix = fail
+        .and_then(|f| match f {
+            TestCase::Rejected(r) => Some(format!("\nreason: {}.", r.bright_red())),
+            _ => None,
+        })
+        .unwrap_or_default();
     runtime_str.retain(|c| !c.is_whitespace());
 
-    println!("\n\nsubmission result: {}. {} passed; {} failed. {}.{}",
-             result_str, num_passed, num_failed, runtime_str, suffix);
+    println!(
+        "\n\nsubmission result: {}. {} passed; {} failed. {}.{}",
+        result_str, num_passed, num_failed, runtime_str, suffix
+    );
 
     Ok(())
 }

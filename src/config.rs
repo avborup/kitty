@@ -1,10 +1,10 @@
-use std::path::PathBuf;
-use std::fs;
-use std::io;
-use platform_dirs::AppDirs;
-use ini::{Ini, Properties, SectionSetter};
 use crate::lang::Language;
 use crate::StdErr;
+use ini::{Ini, Properties, SectionSetter};
+use platform_dirs::AppDirs;
+use std::fs;
+use std::io;
+use std::path::PathBuf;
 
 /// A configuration interaction layer.
 ///
@@ -112,7 +112,7 @@ impl Config {
     pub fn get_host_name(&self) -> Result<&str, StdErr> {
         match self.get_kattis_section()?.get("hostname") {
             Some(u) => Ok(u),
-            None => return Err("could not find hostname under [kattis] in .kattisrc".into()),
+            None => Err("could not find hostname under [kattis] in .kattisrc".into()),
         }
     }
 
@@ -126,7 +126,7 @@ impl Config {
     pub fn get_submit_url(&self) -> Result<&str, StdErr> {
         match self.get_kattis_section()?.get("submissionurl") {
             Some(u) => Ok(u),
-            None => return Err("could not find submission url under [kattis] in .kattisrc".into()),
+            None => Err("could not find submission url under [kattis] in .kattisrc".into()),
         }
     }
 
@@ -140,7 +140,7 @@ impl Config {
     pub fn get_submissions_url(&self) -> Result<&str, StdErr> {
         match self.get_kattis_section()?.get("submissionsurl") {
             Some(u) => Ok(u),
-            None => return Err("could not find submissions url under [kattis] in .kattisrc".into()),
+            None => Err("could not find submissions url under [kattis] in .kattisrc".into()),
         }
     }
 
@@ -154,7 +154,7 @@ impl Config {
     pub fn get_login_url(&self) -> Result<&str, StdErr> {
         match self.get_kattis_section()?.get("loginurl") {
             Some(u) => Ok(u),
-            None => return Err("could not find login url under [kattis] in .kattisrc".into()),
+            None => Err("could not find login url under [kattis] in .kattisrc".into()),
         }
     }
 
@@ -174,7 +174,7 @@ impl Config {
     fn get_kitty_section_mut(&mut self) -> SectionSetter {
         self.ini.with_section(Some("kitty"))
     }
- 
+
     /// Writes the config to the config file.
     pub fn save(&self) -> Result<(), StdErr> {
         self.ini.write_to_file(&self.file)?;
@@ -183,7 +183,7 @@ impl Config {
     }
 
     /// Adds or overwrites the default language setting.
-    pub fn set_default_lang(&mut self, lang: &Language) -> () {
+    pub fn set_default_lang(&mut self, lang: &Language) {
         let mut kitty_section = self.get_kitty_section_mut();
         kitty_section.set("default_language", lang.file_ext());
     }
@@ -192,7 +192,7 @@ impl Config {
     pub fn get_default_lang(&self) -> Option<Language> {
         self.get_kitty_section()
             .and_then(|s| s.get("default_language"))
-            .and_then(|l| Some(Language::from_file_ext(l)))
+            .map(|l| Language::from_file_ext(l))
     }
 }
 
