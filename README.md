@@ -86,5 +86,8 @@ You can find prebuilt binaries in the [releases section](https://github.com/Kong
 
 Currently, only a Windows binary is uploaded. If you want a Linux or macOS binary, feel free to create an issue - then I will get around to it as soon as possible.
 
+## Updating
+To update kitty, you can run `kitty update`.
+
 ## Feature requests
 Feel free to create a new issue if you have any problems or have any feature requests. Pull requests are also welcome.
