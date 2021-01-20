@@ -5,8 +5,22 @@ on:
     types: [published]
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  build:
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: kitty.exe
+            asset_name: kitty-x86_64-pc-windows-msvc.exe
+          - os: ubuntu-latest
+            artifact_name: kitty
+            asset_name: kitty-x86_64-unknown-linux-gnu
+          - os: macos-latest
+            artifact_name: kitty
+            asset_name: kitty-x86_64-apple-darwin
 
     steps:
       - name: Checkout code
@@ -26,6 +40,6 @@ jobs:
         uses: svenstaro/upload-release-action@v1-release
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/release/kitty.exe
-          asset_name: kitty.exe
+          file: target/release/${{ matrix.artifact_name }}
+          asset_name: ${{ matrix.asset_name }}
           tag: ${{ github.event.release.tag_name }}
