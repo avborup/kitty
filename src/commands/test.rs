@@ -177,5 +177,10 @@ fn run_tests(
 }
 
 fn reformat_ans_str(s: &str) -> String {
-    s.replace("\r\n", "\n").lines().map(str::trim).collect()
+    s.replace("\r\n", "\n")
+        .trim()
+        .lines()
+        .map(str::trim)
+        .collect::<Vec<&str>>()
+        .join("\n")
 }
