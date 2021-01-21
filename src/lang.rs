@@ -1,13 +1,8 @@
 use crate::StdErr;
+use std::env::consts::EXE_EXTENSION;
 use std::fmt;
 use std::path::PathBuf;
 use Language::*;
-
-#[cfg(target_os = "windows")]
-const EXEC_EXT: &str = "exe";
-
-#[cfg(not(target_os = "windows"))]
-const EXEC_EXT: &str = "";
 
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub enum Language {
@@ -75,10 +70,10 @@ impl Language {
         .map(|v| v.iter().map(|s| s.to_string()).collect::<Vec<String>>());
 
         let exec_path = match self {
-            Haskell => path.with_extension(EXEC_EXT),
+            Haskell => path.with_extension(EXE_EXTENSION),
             Java => path.with_extension(""),
             Python => path.to_owned(),
-            Rust => path.with_extension(EXEC_EXT),
+            Rust => path.with_extension(EXE_EXTENSION),
             Unknown => PathBuf::new(),
         };
 
