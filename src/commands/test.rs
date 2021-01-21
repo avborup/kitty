@@ -128,8 +128,8 @@ fn run_tests(
         };
 
         if output.status.success() {
-            let ans_str = ans.trim().replace("\r\n", "\n");
-            let out_str = stdout.trim().replace("\r\n", "\n");
+            let ans_str = reformat_ans_str(&ans);
+            let out_str = reformat_ans_str(&stdout);
 
             if ans_str == out_str {
                 println!("{}", CHECKBOX);
@@ -174,4 +174,8 @@ fn run_tests(
     );
 
     Ok(())
+}
+
+fn reformat_ans_str(s: &str) -> String {
+    s.replace("\r\n", "\n").lines().map(str::trim).collect()
 }
