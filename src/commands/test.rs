@@ -6,6 +6,7 @@ use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use std::time;
 
 const CHECKBOX: &str = "\u{2705}"; // Green checkbox emoji
 const CROSSMARK: &str = "\u{274C}"; // Red X emoji
@@ -29,7 +30,7 @@ pub async fn test(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     // .in file and one .ans file)
     let tests = problem.get_test_files()?;
 
-    run_tests(compile_cmd, &run_cmd, &tests)?;
+    run_tests(compile_cmd, &run_cmd, &tests, cmd)?;
 
     Ok(())
 }
@@ -38,6 +39,7 @@ fn run_tests(
     compile_cmd: Option<Vec<String>>,
     run_cmd: &[String],
     tests: &[(PathBuf, PathBuf)],
+    cmd: &ArgMatches<'_>,
 ) -> Result<(), StdErr> {
     if let Some(cmd) = compile_cmd {
         let mut compile_parts = cmd.iter();
@@ -93,6 +95,7 @@ fn run_tests(
 
         let ans = fs::read_to_string(test_ans)?;
 
+        let start_time = time::Instant::now();
         let mut command = Command::new(run_prog);
         command
             .args(&run_args)
@@ -121,6 +124,7 @@ fn run_tests(
             Ok(o) => o,
             Err(_) => return Err("failed to wait for program output".into()),
         };
+        let elapsed_time = start_time.elapsed();
 
         let stdout = match String::from_utf8(output.stdout) {
             Ok(s) => s,
@@ -130,15 +134,21 @@ fn run_tests(
         if output.status.success() {
             let ans_str = reformat_ans_str(&ans);
             let out_str = reformat_ans_str(&stdout);
+            let is_success = ans_str == out_str;
 
-            if ans_str == out_str {
-                println!("{}", CHECKBOX);
-            } else {
+            print!("{}", if is_success { CHECKBOX } else { CROSSMARK });
+
+            if cmd.is_present("time") {
+                print!(" in {:.2}s", elapsed_time.as_secs_f64());
+            }
+
+            println!();
+
+            if !is_success {
                 fails += 1;
 
                 println!(
-                    "{}\n{}\n{}\n\n{}\n{}\n",
-                    CROSSMARK,
+                    "{}\n{}\n\n{}\n{}\n",
                     "Expected:".underline(),
                     ans_str,
                     "Actual:".underline(),
