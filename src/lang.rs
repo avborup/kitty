@@ -6,6 +6,7 @@ use Language::*;
 
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub enum Language {
+    Go,
     Haskell,
     Java,
     Python,
@@ -16,6 +17,7 @@ pub enum Language {
 impl Language {
     pub fn from_file_ext(ext: &str) -> Self {
         match ext {
+            "go" => Go,
             "hs" => Haskell,
             "java" => Java,
             "py" => Python,
@@ -26,6 +28,7 @@ impl Language {
 
     pub fn file_ext(&self) -> &str {
         match self {
+            Go => "go",
             Haskell => "hs",
             Java => "java",
             Python => "py",
@@ -54,6 +57,7 @@ impl Language {
         let dir_path_str = dir_path.to_str().expect("path contained invalid unicode");
 
         let cmd = match self {
+            Go => None,
             Haskell => Some(vec![
                 "ghc",
                 "-O2",
@@ -70,6 +74,7 @@ impl Language {
         .map(|v| v.iter().map(|s| s.to_string()).collect::<Vec<String>>());
 
         let exec_path = match self {
+            Go => path.to_owned(),
             Haskell => path.with_extension(EXE_EXTENSION),
             Java => path.with_extension(""),
             Python => path.to_owned(),
@@ -86,6 +91,7 @@ impl Language {
         dir_path.pop();
 
         let cmd = match self {
+            Go => vec!["go", "run", file_path.to_str().unwrap()],
             Haskell => vec![file_path.to_str().unwrap()],
             Java => {
                 let class_name = file_path.file_stem().unwrap().to_str().unwrap();
@@ -104,19 +110,20 @@ impl Language {
     pub fn has_main_class(&self) -> bool {
         match self {
             Java => true,
-            Haskell | Python | Rust | Unknown => false,
+            Go | Haskell | Python | Rust | Unknown => false,
         }
     }
 
     /// Returns an iterator over all `Language` variants except `Unknown`.
     pub fn all() -> impl Iterator<Item = Language> {
-        [Haskell, Java, Python, Rust].iter().copied()
+        [Go, Haskell, Java, Python, Rust].iter().copied()
     }
 }
 
 impl fmt::Display for Language {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let str = match self {
+            Go => "Go",
             Haskell => "Haskell",
             Java => "Java",
             Python => "Python 3",
