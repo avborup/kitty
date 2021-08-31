@@ -13,6 +13,7 @@ type StdErr = Box<dyn std::error::Error>;
 async fn main() {
     let app = cli::init();
 
+    // Random change to test clippy in Github Actions - not to be merged
     let matches = app.get_matches();
     let res = match matches.subcommand() {
         ("test", Some(sub)) => commands::test(sub).await,
