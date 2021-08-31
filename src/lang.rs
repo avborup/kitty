@@ -1,7 +1,7 @@
 use crate::StdErr;
 use std::env::consts::EXE_EXTENSION;
 use std::fmt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use Language::*;
 
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
@@ -34,7 +34,7 @@ impl Language {
         }
     }
 
-    pub fn from_file(file: &PathBuf) -> Result<Language, StdErr> {
+    pub fn from_file(file: &Path) -> Result<Language, StdErr> {
         let ext = match file.extension() {
             Some(e) => e.to_str().expect("invalid unicode in file extension"),
             None => return Err("file has no file extension".into()),
@@ -46,8 +46,8 @@ impl Language {
     }
 
     // FIXME: This function may trust the input path too much.
-    pub fn get_compile_instructions(&self, path: &PathBuf) -> (Option<Vec<String>>, PathBuf) {
-        let mut dir_path = path.clone();
+    pub fn get_compile_instructions(&self, path: &Path) -> (Option<Vec<String>>, PathBuf) {
+        let mut dir_path = path.to_path_buf();
         dir_path.pop();
 
         let path_str = path.to_str().expect("path contained invalid unicode");
@@ -81,8 +81,8 @@ impl Language {
     }
 
     // FIXME: This function may trust the input path too much.
-    pub fn get_run_cmd(&self, file_path: &PathBuf) -> Option<Vec<String>> {
-        let mut dir_path = file_path.clone();
+    pub fn get_run_cmd(&self, file_path: &Path) -> Option<Vec<String>> {
+        let mut dir_path = file_path.to_path_buf();
         dir_path.pop();
 
         let cmd = match self {

@@ -6,7 +6,7 @@ use colored::Colorize;
 use std::env;
 use std::fs;
 use std::io::{self, Read, Write};
-use std::path::PathBuf;
+use std::path::Path;
 use zip::ZipArchive;
 
 pub async fn get(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
@@ -71,7 +71,7 @@ pub async fn get_and_create_problem(
     };
 
     if let Some(l) = lang {
-        init_file(&cfg, id, &l)?;
+        init_file(cfg, id, &l)?;
     }
 
     println!("{} problem \"{}\"", "created".bright_green(), id);
@@ -79,7 +79,7 @@ pub async fn get_and_create_problem(
     Ok(())
 }
 
-async fn fetch_tests(parent_dir: &PathBuf, problem_url: &str) -> Result<(), StdErr> {
+async fn fetch_tests(parent_dir: &Path, problem_url: &str) -> Result<(), StdErr> {
     let t_dir = parent_dir.join("test");
     let t_dir = t_dir.as_path();
     if fs::create_dir(t_dir).is_err() {
@@ -133,7 +133,7 @@ async fn fetch_tests(parent_dir: &PathBuf, problem_url: &str) -> Result<(), StdE
             return Err("failed to read sample file from zip".into());
         }
 
-        if dest.write_all(&content.as_bytes()).is_err() {
+        if dest.write_all(content.as_bytes()).is_err() {
             return Err(format!("failed to write to file {}", &name).into());
         }
     }

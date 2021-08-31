@@ -6,7 +6,7 @@ use std::env;
 use std::io;
 use std::path::{Path, PathBuf};
 
-fn path_str(p: &PathBuf) -> &str {
+fn path_str(p: &Path) -> &str {
     p.to_str().expect("path did not contain valid unicode")
 }
 
@@ -94,7 +94,7 @@ impl Problem {
             .expect("path did not contain valid unicode")
     }
 
-    fn get_valid_source_files(dir: &PathBuf) -> io::Result<Vec<PathBuf>> {
+    fn get_valid_source_files(dir: &Path) -> io::Result<Vec<PathBuf>> {
         let entries = dir.read_dir()?;
         let mut sources = Vec::new();
 
@@ -122,11 +122,11 @@ impl Problem {
         Ok(sources)
     }
 
-    pub fn get_source_file(dir: &PathBuf, file_arg: Option<&str>) -> Result<PathBuf, StdErr> {
+    pub fn get_source_file(dir: &Path, file_arg: Option<&str>) -> Result<PathBuf, StdErr> {
         let files = Self::get_valid_source_files(dir)?;
 
         if files.is_empty() {
-            return Err(format!("no source files found in {}", path_str(&dir)).into());
+            return Err(format!("no source files found in {}", path_str(dir)).into());
         } else if files.len() > 1 && file_arg.is_none() {
             return Err(
                 "multiple source files found - pass the correct source file as an argument".into(),
