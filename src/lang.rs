@@ -6,6 +6,7 @@ use Language::*;
 
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub enum Language {
+    CSharp,
     Go,
     Haskell,
     Java,
@@ -17,6 +18,7 @@ pub enum Language {
 impl Language {
     pub fn from_file_ext(ext: &str) -> Self {
         match ext {
+            "cs" => CSharp,
             "go" => Go,
             "hs" => Haskell,
             "java" => Java,
@@ -28,6 +30,7 @@ impl Language {
 
     pub fn file_ext(&self) -> &str {
         match self {
+            CSharp => "cs",
             Go => "go",
             Haskell => "hs",
             Java => "java",
@@ -56,7 +59,11 @@ impl Language {
         let path_str = path.to_str().expect("path contained invalid unicode");
         let dir_path_str = dir_path.to_str().expect("path contained invalid unicode");
 
+        // FIXME: Ugly solution for C# command - caused by function returning
+        // `Vec<String>` and not `Vec<&str>`.
+        let c_sharp_compile_cmd = get_c_sharp_compile_command(path);
         let cmd = match self {
+            CSharp => Some(c_sharp_compile_cmd.iter().map(|s| s as &str).collect()),
             Go => None,
             Haskell => Some(vec![
                 "ghc",
@@ -74,6 +81,7 @@ impl Language {
         .map(|v| v.iter().map(|s| s.to_string()).collect::<Vec<String>>());
 
         let exec_path = match self {
+            CSharp => path.with_extension(EXE_EXTENSION),
             Go => path.to_owned(),
             Haskell => path.with_extension(EXE_EXTENSION),
             Java => path.with_extension(""),
@@ -91,6 +99,7 @@ impl Language {
         dir_path.pop();
 
         let cmd = match self {
+            CSharp => vec![file_path.to_str().unwrap()],
             Go => vec!["go", "run", file_path.to_str().unwrap()],
             Haskell => vec![file_path.to_str().unwrap()],
             Java => {
@@ -110,19 +119,20 @@ impl Language {
     pub fn has_main_class(&self) -> bool {
         match self {
             Java => true,
-            Go | Haskell | Python | Rust | Unknown => false,
+            CSharp | Go | Haskell | Python | Rust | Unknown => false,
         }
     }
 
     /// Returns an iterator over all `Language` variants except `Unknown`.
     pub fn all() -> impl Iterator<Item = Language> {
-        [Go, Haskell, Java, Python, Rust].iter().copied()
+        [CSharp, Go, Haskell, Java, Python, Rust].iter().copied()
     }
 }
 
 impl fmt::Display for Language {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let str = match self {
+            CSharp => "C#",
             Go => "Go",
             Haskell => "Haskell",
             Java => "Java",
@@ -135,4 +145,23 @@ impl fmt::Display for Language {
 
         Ok(())
     }
+}
+
+#[cfg(target_os = "windows")]
+fn get_c_sharp_compile_command(src_path: &Path) -> Vec<String> {
+    let mut exe_path = src_path.to_path_buf();
+    exe_path.set_extension(EXE_EXTENSION);
+    let exe_path_str = exe_path.to_str().expect("path contained invalid unicode");
+    let src_path_str = src_path.to_str().expect("path contained invalid unicode");
+
+    vec![
+        "csc".to_string(),
+        format!("/out:{}", exe_path_str),
+        src_path_str.to_string(),
+    ]
+}
+
+#[cfg(not(target_os = "windows"))]
+fn get_c_sharp_compile_command(src_path: &Path) -> Vec<String> {
+    unimplemented!()
 }
