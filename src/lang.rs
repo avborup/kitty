@@ -147,21 +147,20 @@ impl fmt::Display for Language {
     }
 }
 
-#[cfg(target_os = "windows")]
 fn get_c_sharp_compile_command(src_path: &Path) -> Vec<String> {
     let mut exe_path = src_path.to_path_buf();
     exe_path.set_extension(EXE_EXTENSION);
     let exe_path_str = exe_path.to_str().expect("path contained invalid unicode");
     let src_path_str = src_path.to_str().expect("path contained invalid unicode");
 
+    #[cfg(windows)]
+    let (compiler_cmd, arg_symbol) = ("csc", "/");
+    #[cfg(unix)]
+    let (compiler_cmd, arg_symbol) = ("mcs", "-");
+
     vec![
-        "csc".to_string(),
-        format!("/out:{}", exe_path_str),
+        compiler_cmd.to_string(),
+        format!("{}out:{}", arg_symbol, exe_path_str),
         src_path_str.to_string(),
     ]
-}
-
-#[cfg(not(target_os = "windows"))]
-fn get_c_sharp_compile_command(src_path: &Path) -> Vec<String> {
-    unimplemented!()
 }
