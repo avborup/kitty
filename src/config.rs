@@ -11,9 +11,9 @@ use std::path::{Path, PathBuf};
 use yaml_rust::{Yaml, YamlLoader};
 
 #[cfg(unix)]
-const PLATFORM_KEY: &'static str = "unix";
+const PLATFORM_KEY: &str = "unix";
 #[cfg(windows)]
-const PLATFORM_KEY: &'static str = "windows";
+const PLATFORM_KEY: &str = "windows";
 
 /// A configuration interaction layer.
 ///
