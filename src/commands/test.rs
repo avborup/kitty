@@ -16,18 +16,8 @@ pub async fn test(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let lang = problem.lang();
     let file = problem.file();
 
-    // Fetch compilation instructions: command to execute and path of executable
-    let (compile_cmd, exec_path) = lang.get_compile_instructions(&file);
-
-    // Get the terminal command to run in order to run the source file.
-    let run_cmd = if let Some(cmd) = lang.get_run_cmd(&exec_path) {
-        cmd
-    } else {
-        return Err(format!("kitty doesn't know how to run {} files", lang).into());
-    };
-
-    // Collect all pairs of test files from the "test" subfolder (a pair is one
-    // .in file and one .ans file)
+    let compile_cmd = lang.get_compile_cmd(&file)?;
+    let run_cmd = lang.get_run_cmd(&file)?;
     let tests = problem.get_test_files()?;
 
     run_tests(compile_cmd, &run_cmd, &tests, cmd)?;

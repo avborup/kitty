@@ -71,9 +71,9 @@ pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     Ok(())
 }
 
-async fn submit_problem(
+async fn submit_problem<'a>(
     kc: &KattisClient,
-    problem: &Problem,
+    problem: &Problem<'_>,
     submit_url: &str,
 ) -> Result<Option<String>, StdErr> {
     let file_path = problem.file();
@@ -91,7 +91,6 @@ async fn submit_problem(
     let form = Form::new()
         .text("problem", problem.name())
         .text("language", problem.lang().to_string())
-        .text("mainclass", problem.get_main_class().unwrap_or_default())
         .part("sub_file[]", file_part)
         .text("submit_ctr", "2")
         .text("submit", "true")

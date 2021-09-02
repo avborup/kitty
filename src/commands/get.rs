@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::lang::Language;
 use crate::StdErr;
+use crate::CFG as cfg_vals;
 use clap::ArgMatches;
 use colored::Colorize;
 use std::env;
@@ -65,7 +66,10 @@ pub async fn get_and_create_problem(
     fetch_tests(&p_dir, &p_url).await?;
 
     let lang = if let Some(l) = lang_arg {
-        Some(Language::from_file_ext(l))
+        match cfg_vals.lang_from_file_ext(l) {
+            Some(v) => Some(v),
+            None => return Err(format!("could not find a language to use for .{} files", l).into()),
+        }
     } else {
         cfg.get_default_lang()
     };
@@ -142,11 +146,6 @@ async fn fetch_tests(parent_dir: &Path, problem_url: &str) -> Result<(), StdErr>
 }
 
 pub fn init_file(cfg: &Config, problem_id: &str, lang: &Language) -> Result<(), StdErr> {
-    if let Language::Unknown = lang {
-        println!("kitty cannot handle the given language and will skip creating the file for you.");
-        return Ok(());
-    }
-
     let templates_dir = cfg.get_templates_dir();
 
     if !templates_dir.exists() {

@@ -1,6 +1,6 @@
 use crate::config::Config;
-use crate::lang::Language;
 use crate::StdErr;
+use crate::CFG as cfg_vals;
 use clap::ArgMatches;
 use colored::Colorize;
 
@@ -31,11 +31,12 @@ pub async fn config(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let mut cfg = Config::load()?;
 
     if let Some(lang_str) = cmd.value_of("default language") {
-        let lang = Language::from_file_ext(lang_str);
-
-        if let Language::Unknown = lang {
-            return Err(format!("kitty does not know how to handle .{} files", lang_str).into());
-        }
+        let lang = match cfg_vals.lang_from_file_ext(lang_str) {
+            Some(l) => l,
+            None => {
+                return Err(format!("kitty does not know how to handle .{} files", lang_str).into())
+            }
+        };
 
         cfg.set_default_lang(&lang);
         cfg.save()?;

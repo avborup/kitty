@@ -1,5 +1,6 @@
 use crate::lang::Language;
 use crate::StdErr;
+use crate::CFG as cfg;
 use clap::ArgMatches;
 use std::collections::HashMap;
 use std::env;
@@ -11,14 +12,14 @@ fn path_str(p: &Path) -> &str {
 }
 
 #[derive(Debug)]
-pub struct Problem {
+pub struct Problem<'a> {
     name: String,
     path: PathBuf,
     file: PathBuf,
-    lang: Language,
+    lang: &'a Language,
 }
 
-impl Problem {
+impl<'a> Problem<'a> {
     pub fn from_args(cmd: &ArgMatches) -> Result<Self, StdErr> {
         // We can unwrap here because clap will exit automatically when this arg
         // is not present.
@@ -43,26 +44,25 @@ impl Problem {
         // provided, that takes precedence.
         let lang_arg = cmd.value_of("language");
         let lang = match lang_arg {
-            Some(e) => Language::from_file_ext(&e.to_lowercase()),
-            None => Language::from_file(&file)?,
+            Some(e) => cfg.lang_from_file_ext(&e),
+            None => cfg.lang_from_file(&file)?,
         };
 
-        if let Language::Unknown = lang {
-            return Err(match lang_arg {
+        match lang {
+            Some(l) => Ok(Self {
+                name,
+                path,
+                file,
+                lang: l,
+            }),
+            None => Err(match lang_arg {
                 Some(l) => format!("kitty doesn't know how to handle {} files", l),
                 None => {
                     "kitty doesn't know the file extension of the given source file".to_string()
                 }
             }
-            .into());
+            .into()),
         }
-
-        Ok(Self {
-            name,
-            path,
-            file,
-            lang,
-        })
     }
 
     pub fn get_path(path_arg: &str) -> Result<PathBuf, StdErr> {
@@ -113,8 +113,8 @@ impl Problem {
                 None => continue,
             };
 
-            match Language::from_file_ext(ext.to_lowercase().as_str()) {
-                Language::Unknown => {}
+            match cfg.lang_from_file_ext(ext) {
+                None => {}
                 _ => sources.push(path),
             };
         }
@@ -148,6 +148,8 @@ impl Problem {
         Ok(file_path)
     }
 
+    /// Collects all pairs of test files from the "test" subfolder (a pair is
+    /// one `.in` file and one `.ans` file with the same name)
     pub fn get_test_files(&self) -> Result<Vec<(PathBuf, PathBuf)>, StdErr> {
         let test_path = self.path.join("test");
 
@@ -204,22 +206,7 @@ impl Problem {
         Ok(test_files)
     }
 
-    pub fn get_main_class(&self) -> Option<String> {
-        if self.lang.has_main_class() {
-            Some(
-                self.file
-                    .file_stem()
-                    .unwrap()
-                    .to_str()
-                    .expect("file name contained invalid unicode")
-                    .to_string(),
-            )
-        } else {
-            None
-        }
-    }
-
-    pub fn lang(&self) -> Language {
+    pub fn lang(&self) -> &Language {
         self.lang
     }
 

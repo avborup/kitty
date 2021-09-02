@@ -1,10 +1,19 @@
 use crate::lang::Language;
+use crate::utils::path_to_str;
 use crate::StdErr;
+use crate::CFG as cfg_vals;
 use ini::{Ini, Properties, SectionSetter};
 use platform_dirs::AppDirs;
+use std::env::consts::EXE_EXTENSION;
 use std::fs;
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use yaml_rust::{Yaml, YamlLoader};
+
+#[cfg(unix)]
+const PLATFORM_KEY: &'static str = "unix";
+#[cfg(windows)]
+const PLATFORM_KEY: &'static str = "windows";
 
 /// A configuration interaction layer.
 ///
@@ -16,6 +25,123 @@ pub struct Config {
     ini: Ini,
     dir: PathBuf,
     file: PathBuf,
+}
+
+#[derive(Default, Debug)]
+pub struct ConfigValues {
+    default_language: Option<String>,
+    languages: Vec<Language>,
+}
+
+impl ConfigValues {
+    pub fn load() -> Result<Self, StdErr> {
+        let config_dir = Config::dir_path();
+        let config_file = config_dir.join("kitty.yml");
+
+        if !config_file.exists() {
+            return Ok(Default::default());
+        }
+
+        let config_text = fs::read_to_string(config_file)?;
+        let config = Self::parse_config_from_yaml(&config_text)?;
+
+        Ok(config)
+    }
+
+    fn parse_config_from_yaml(yaml_str: &str) -> Result<Self, StdErr> {
+        let docs = YamlLoader::load_from_str(yaml_str)?;
+
+        let doc = match docs.first() {
+            Some(d) => d,
+            None => return Ok(Default::default()),
+        };
+
+        let default_language = doc["default_language"].as_str().map(str::to_string);
+        let languages = doc["languages"]
+            .as_vec()
+            .map(|v| {
+                v.iter()
+                    .map(|b| lang_from_yml(b))
+                    .collect::<Result<Vec<_>, _>>()
+            })
+            .unwrap_or_else(|| Ok(Vec::new()))?;
+
+        let config = Self {
+            default_language,
+            languages,
+        };
+
+        Ok(config)
+    }
+
+    pub fn lang_from_file_ext(&self, file_ext: &str) -> Option<&Language> {
+        self.languages
+            .iter()
+            .find(|l| l.file_ext().to_lowercase() == file_ext.to_lowercase())
+    }
+
+    pub fn lang_from_file(&self, file: &Path) -> Result<Option<&Language>, StdErr> {
+        let ext = match file.extension() {
+            Some(e) => e.to_str().expect("invalid unicode in file extension"),
+            None => return Err("file has no file extension".into()),
+        };
+
+        let lang = self.lang_from_file_ext(&ext);
+
+        Ok(lang)
+    }
+
+    pub fn languages(&self) -> impl Iterator<Item = &Language> {
+        self.languages.iter()
+    }
+}
+
+fn lang_from_yml(lang_block: &Yaml) -> Result<Language, StdErr> {
+    let name = get_value_else_err("name", lang_block)?;
+    let file_ext = get_value_else_err("file_extension", lang_block)?;
+    let run_cmd = get_value_else_err("run_command", lang_block)?;
+    let compile_cmd = get_string_value("compile_command", lang_block);
+
+    Ok(Language::new(name, file_ext, run_cmd, compile_cmd))
+}
+
+fn get_value_else_err(key: &str, doc: &Yaml) -> Result<String, StdErr> {
+    get_string_value(key, doc).ok_or(
+        format!(
+            "languages in the config file must contain a '{}' field",
+            key,
+        )
+        .into(),
+    )
+}
+
+fn get_string_value(key: &str, doc: &Yaml) -> Option<String> {
+    get_value(key, doc).and_then(|y| y.into_string())
+}
+
+fn get_value(key: &str, doc: &Yaml) -> Option<Yaml> {
+    let platform_value = &doc[PLATFORM_KEY][key];
+
+    Some(if !platform_value.is_badvalue() {
+        platform_value.clone()
+    } else {
+        doc[key].clone()
+    })
+}
+
+pub fn prepare_cmd(cmd: &str, file_path: &Path) -> Option<Vec<String>> {
+    let mut dir_path = file_path.to_path_buf();
+    dir_path.pop();
+    let exe_path = file_path.with_extension(EXE_EXTENSION);
+    let file_name_no_ext = file_path.file_stem().unwrap().to_str().unwrap();
+
+    let cmd = cmd
+        .replace("$SRC_PATH", &path_to_str(file_path))
+        .replace("$SRC_FILE_NAME_NO_EXT", file_name_no_ext)
+        .replace("$DIR_PATH", &path_to_str(&dir_path))
+        .replace("$EXE_PATH", &path_to_str(&exe_path));
+
+    shlex::split(&cmd)
 }
 
 impl Config {
@@ -189,10 +315,10 @@ impl Config {
     }
 
     /// Retrieves the default language setting from the config file.
-    pub fn get_default_lang(&self) -> Option<Language> {
+    pub fn get_default_lang(&self) -> Option<&Language> {
         self.get_kitty_section()
             .and_then(|s| s.get("default_language"))
-            .map(|l| Language::from_file_ext(l))
+            .and_then(|l| cfg_vals.lang_from_file_ext(l))
     }
 }
 
