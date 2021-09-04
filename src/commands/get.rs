@@ -1,4 +1,4 @@
-use crate::config::ConfigValues;
+use crate::config::Config;
 use crate::lang::Language;
 use crate::StdErr;
 use crate::CFG as cfg;
@@ -145,7 +145,7 @@ async fn fetch_tests(parent_dir: &Path, problem_url: &str) -> Result<(), StdErr>
 }
 
 pub fn init_file(problem_id: &str, lang: &Language) -> Result<(), StdErr> {
-    let templates_dir = ConfigValues::templates_dir_path();
+    let templates_dir = Config::templates_dir_path();
 
     if !templates_dir.exists() {
         println!(

@@ -16,13 +16,13 @@ const PLATFORM_KEY: &str = "unix";
 const PLATFORM_KEY: &str = "windows";
 
 #[derive(Default, Debug)]
-pub struct ConfigValues {
+pub struct Config {
     default_language: Option<String>,
     languages: Vec<Language>,
     kattisrc: Option<Kattisrc>,
 }
 
-impl ConfigValues {
+impl Config {
     pub fn load() -> Result<Self, StdErr> {
         let config_file = Self::dir_path().join("kitty.yml");
         let kattisrc = Kattisrc::load()?;
@@ -191,7 +191,7 @@ impl Kattisrc {
     }
 
     pub fn path() -> PathBuf {
-        let config_dir = ConfigValues::dir_path();
+        let config_dir = Config::dir_path();
         config_dir.join(".kattisrc")
     }
 

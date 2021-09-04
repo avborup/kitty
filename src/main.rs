@@ -1,5 +1,5 @@
 use colored::Colorize;
-use config::ConfigValues;
+use config::Config;
 use lazy_static::lazy_static;
 
 mod cli;
@@ -13,8 +13,8 @@ mod utils;
 type StdErr = Box<dyn std::error::Error>;
 
 lazy_static! {
-    static ref CFG: ConfigValues = {
-        let cfg_result = ConfigValues::load();
+    static ref CFG: Config = {
+        let cfg_result = Config::load();
         exit_if_err(&cfg_result);
         cfg_result.unwrap()
     };
