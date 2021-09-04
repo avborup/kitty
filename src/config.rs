@@ -25,15 +25,19 @@ pub struct ConfigValues {
 impl ConfigValues {
     pub fn load() -> Result<Self, StdErr> {
         let config_file = Self::dir_path().join("kitty.yml");
+        let kattisrc = Kattisrc::load()?;
 
         if !config_file.exists() {
-            return Ok(Default::default());
+            return Ok(Self {
+                kattisrc,
+                ..Default::default()
+            });
         }
 
         let config_text = fs::read_to_string(config_file)?;
         let config = Self::parse_config_from_yaml(&config_text)?;
 
-        Ok(config)
+        Ok(Self { kattisrc, ..config })
     }
 
     fn parse_config_from_yaml(yaml_str: &str) -> Result<Self, StdErr> {
@@ -57,7 +61,7 @@ impl ConfigValues {
         let config = Self {
             default_language,
             languages,
-            kattisrc: Kattisrc::load()?,
+            ..Default::default()
         };
 
         Ok(config)
