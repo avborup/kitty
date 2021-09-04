@@ -8,12 +8,6 @@ use std::fmt::Debug;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
-use yaml_rust::{Yaml, YamlLoader};
-
-#[cfg(unix)]
-const PLATFORM_KEY: &str = "unix";
-#[cfg(windows)]
-const PLATFORM_KEY: &str = "windows";
 
 #[derive(Default, Debug)]
 pub struct Config {
@@ -35,36 +29,9 @@ impl Config {
         }
 
         let config_text = fs::read_to_string(config_file)?;
-        let config = Self::parse_config_from_yaml(&config_text)?;
+        let config = config_parser::parse_config_from_yaml(&config_text)?;
 
         Ok(Self { kattisrc, ..config })
-    }
-
-    fn parse_config_from_yaml(yaml_str: &str) -> Result<Self, StdErr> {
-        let docs = YamlLoader::load_from_str(yaml_str)?;
-
-        let doc = match docs.first() {
-            Some(d) => d,
-            None => return Ok(Default::default()),
-        };
-
-        let default_language = doc["default_language"].as_str().map(str::to_string);
-        let languages = doc["languages"]
-            .as_vec()
-            .map(|v| {
-                v.iter()
-                    .map(|b| lang_from_yml(b))
-                    .collect::<Result<Vec<_>, _>>()
-            })
-            .unwrap_or_else(|| Ok(Vec::new()))?;
-
-        let config = Self {
-            default_language,
-            languages,
-            ..Default::default()
-        };
-
-        Ok(config)
     }
 
     pub fn lang_from_file_ext(&self, file_ext: &str) -> Option<&Language> {
@@ -125,37 +92,74 @@ impl Config {
     }
 }
 
-fn lang_from_yml(lang_block: &Yaml) -> Result<Language, StdErr> {
-    let name = get_value_else_err("name", lang_block)?;
-    let file_ext = get_value_else_err("file_extension", lang_block)?;
-    let run_cmd = get_value_else_err("run_command", lang_block)?;
-    let compile_cmd = get_string_value("compile_command", lang_block);
+mod config_parser {
+    use crate::{config::Config, lang::Language, StdErr};
+    use yaml_rust::{Yaml, YamlLoader};
 
-    Ok(Language::new(name, file_ext, run_cmd, compile_cmd))
-}
+    #[cfg(unix)]
+    const PLATFORM_KEY: &str = "unix";
+    #[cfg(windows)]
+    const PLATFORM_KEY: &str = "windows";
 
-fn get_value_else_err(key: &str, doc: &Yaml) -> Result<String, StdErr> {
-    get_string_value(key, doc).ok_or_else(|| {
-        format!(
-            "languages in the config file must contain a '{}' field",
-            key,
-        )
-        .into()
-    })
-}
+    pub fn parse_config_from_yaml(yaml_str: &str) -> Result<Config, StdErr> {
+        let docs = YamlLoader::load_from_str(yaml_str)?;
 
-fn get_string_value(key: &str, doc: &Yaml) -> Option<String> {
-    get_value(key, doc).and_then(|y| y.into_string())
-}
+        let doc = match docs.first() {
+            Some(d) => d,
+            None => return Ok(Default::default()),
+        };
 
-fn get_value(key: &str, doc: &Yaml) -> Option<Yaml> {
-    let platform_value = &doc[PLATFORM_KEY][key];
+        let default_language = doc["default_language"].as_str().map(str::to_string);
+        let languages = doc["languages"]
+            .as_vec()
+            .map(|v| {
+                v.iter()
+                    .map(|b| lang_from_yml(b))
+                    .collect::<Result<Vec<_>, _>>()
+            })
+            .unwrap_or_else(|| Ok(Vec::new()))?;
 
-    Some(if !platform_value.is_badvalue() {
-        platform_value.clone()
-    } else {
-        doc[key].clone()
-    })
+        let config = Config {
+            default_language,
+            languages,
+            ..Default::default()
+        };
+
+        Ok(config)
+    }
+
+    fn lang_from_yml(lang_block: &Yaml) -> Result<Language, StdErr> {
+        let name = get_value_else_err("name", lang_block)?;
+        let file_ext = get_value_else_err("file_extension", lang_block)?;
+        let run_cmd = get_value_else_err("run_command", lang_block)?;
+        let compile_cmd = get_string_value("compile_command", lang_block);
+
+        Ok(Language::new(name, file_ext, run_cmd, compile_cmd))
+    }
+
+    fn get_value_else_err(key: &str, doc: &Yaml) -> Result<String, StdErr> {
+        get_string_value(key, doc).ok_or_else(|| {
+            format!(
+                "languages in the config file must contain a '{}' field",
+                key,
+            )
+            .into()
+        })
+    }
+
+    fn get_string_value(key: &str, doc: &Yaml) -> Option<String> {
+        get_value(key, doc).and_then(|y| y.into_string())
+    }
+
+    fn get_value(key: &str, doc: &Yaml) -> Option<Yaml> {
+        let platform_value = &doc[PLATFORM_KEY][key];
+
+        Some(if !platform_value.is_badvalue() {
+            platform_value.clone()
+        } else {
+            doc[key].clone()
+        })
+    }
 }
 
 pub fn prepare_cmd(cmd: &str, file_path: &Path) -> Option<Vec<String>> {
