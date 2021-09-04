@@ -33,9 +33,9 @@ fn run_tests(
 ) -> Result<(), StdErr> {
     if let Some(cmd) = compile_cmd {
         let mut compile_parts = cmd.iter();
-        // We always define commands ourselves in this source code, so we can
-        // guarantee that parts will always have at least one entry.
-        let compile_prog = compile_parts.next().unwrap();
+        let compile_prog = compile_parts
+            .next()
+            .ok_or_else::<StdErr, _>(|| "compile command was empty".into())?;
         let compile_args: Vec<_> = compile_parts.collect();
 
         let mut command = Command::new(compile_prog);
@@ -64,9 +64,9 @@ fn run_tests(
     }
 
     let mut run_parts = run_cmd.iter();
-    // We always define commands ourselves in this source code, so we can
-    // guarantee that parts will always have at least one entry.
-    let run_prog = run_parts.next().unwrap();
+    let run_prog = run_parts
+        .next()
+        .ok_or_else::<StdErr, _>(|| "run command was empty".into())?;
     let run_args: Vec<_> = run_parts.collect();
     let mut fails = 0;
 
