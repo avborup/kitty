@@ -44,7 +44,7 @@ impl<'a> Problem<'a> {
         // provided, that takes precedence.
         let lang_arg = cmd.value_of("language");
         let lang = match lang_arg {
-            Some(e) => cfg.lang_from_file_ext(&e),
+            Some(e) => cfg.lang_from_file_ext(e),
             None => cfg.lang_from_file(&file)?,
         };
 

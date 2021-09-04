@@ -31,7 +31,8 @@ impl Language {
     }
 
     pub fn get_run_cmd(&self, file_path: &Path) -> Result<Vec<String>, StdErr> {
-        config::prepare_cmd(&self.run_cmd, file_path).ok_or("failed to parse run command".into())
+        config::prepare_cmd(&self.run_cmd, file_path)
+            .ok_or_else(|| "failed to parse run command".into())
     }
 
     pub fn get_compile_cmd(&self, file_path: &Path) -> Result<Option<Vec<String>>, StdErr> {
@@ -40,7 +41,7 @@ impl Language {
             None => return Ok(None),
         };
 
-        match config::prepare_cmd(&cmd_str, file_path) {
+        match config::prepare_cmd(cmd_str, file_path) {
             Some(c) => Ok(Some(c)),
             None => Err("failed to parse compile command".into()),
         }

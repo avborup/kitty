@@ -74,7 +74,7 @@ pub async fn get_and_create_problem(
     };
 
     if let Some(l) = lang {
-        init_file(id, &l)?;
+        init_file(id, l)?;
     }
 
     println!("{} problem \"{}\"", "created".bright_green(), id);

@@ -75,7 +75,7 @@ impl ConfigValues {
             None => return Err("file has no file extension".into()),
         };
 
-        let lang = self.lang_from_file_ext(&ext);
+        let lang = self.lang_from_file_ext(ext);
 
         Ok(lang)
     }
@@ -131,13 +131,13 @@ fn lang_from_yml(lang_block: &Yaml) -> Result<Language, StdErr> {
 }
 
 fn get_value_else_err(key: &str, doc: &Yaml) -> Result<String, StdErr> {
-    get_string_value(key, doc).ok_or(
+    get_string_value(key, doc).ok_or_else(|| {
         format!(
             "languages in the config file must contain a '{}' field",
             key,
         )
-        .into(),
-    )
+        .into()
+    })
 }
 
 fn get_string_value(key: &str, doc: &Yaml) -> Option<String> {
