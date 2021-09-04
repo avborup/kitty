@@ -1,10 +1,10 @@
 use crate::lang::Language;
 use crate::utils::path_to_str;
 use crate::StdErr;
-use crate::CFG as cfg_vals;
-use ini::{Ini, Properties, SectionSetter};
+use ini::{Ini, Properties};
 use platform_dirs::AppDirs;
 use std::env::consts::EXE_EXTENSION;
+use std::fmt::Debug;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -15,28 +15,16 @@ const PLATFORM_KEY: &str = "unix";
 #[cfg(windows)]
 const PLATFORM_KEY: &str = "windows";
 
-/// A configuration interaction layer.
-///
-/// The associated methods wrap the Ini struct from [rust-ini], and construct
-/// errors and return values that are appropriate for kitty.
-///
-/// [rust-ini]: https://crates.io/crates/rust-ini
-pub struct Config {
-    ini: Ini,
-    dir: PathBuf,
-    file: PathBuf,
-}
-
 #[derive(Default, Debug)]
 pub struct ConfigValues {
     default_language: Option<String>,
     languages: Vec<Language>,
+    kattisrc: Option<Kattisrc>,
 }
 
 impl ConfigValues {
     pub fn load() -> Result<Self, StdErr> {
-        let config_dir = Config::dir_path();
-        let config_file = config_dir.join("kitty.yml");
+        let config_file = Self::dir_path().join("kitty.yml");
 
         if !config_file.exists() {
             return Ok(Default::default());
@@ -69,6 +57,7 @@ impl ConfigValues {
         let config = Self {
             default_language,
             languages,
+            kattisrc: Kattisrc::load()?,
         };
 
         Ok(config)
@@ -93,6 +82,42 @@ impl ConfigValues {
 
     pub fn languages(&self) -> impl Iterator<Item = &Language> {
         self.languages.iter()
+    }
+
+    pub fn default_language(&self) -> Option<&Language> {
+        self.default_language
+            .as_ref()
+            .and_then(|l| self.lang_from_file_ext(l))
+    }
+
+    /// Gets kitty's config directory. The location of this directory will vary
+    /// by platform:
+    ///  - `%APPDATA%/kitty` on Windows
+    ///  - `~/.config/kitty` on Linux
+    ///  - `~/Library/Application Support/kitty` on macOS
+    pub fn dir_path() -> PathBuf {
+        AppDirs::new(Some("kitty"), false)
+            .expect("failed to find where the kitty config directory should be located")
+            .config_dir
+    }
+
+    /// Retrieves the path to the directory containing user-defined templates.
+    pub fn templates_dir_path() -> PathBuf {
+        Self::dir_path().join("templates")
+    }
+
+    /// Sets up the config directory and gives back the path of it.
+    pub fn init() -> io::Result<PathBuf> {
+        let dir_path = Self::dir_path();
+        fs::create_dir_all(Self::templates_dir_path())?;
+        Ok(dir_path)
+    }
+
+    pub fn kattisrc(&self) -> Result<&Kattisrc, StdErr> {
+        self.kattisrc.as_ref().ok_or_else(|| {
+            format!("could not find .kattisrc file. you must download your .kattisrc file from https://open.kattis.com/download/kattisrc and save it at {}",
+                Kattisrc::path().to_str().expect("config file path contained invalid unicode")).into()
+        })
     }
 }
 
@@ -144,49 +169,26 @@ pub fn prepare_cmd(cmd: &str, file_path: &Path) -> Option<Vec<String>> {
     shlex::split(&cmd)
 }
 
-impl Config {
-    /// Instantiates a `Config` by loading the `.kattisrc` file located at
-    /// kitty's config directory. The location of this directory will vary by
-    /// platform:
-    ///  - `%APPDATA%/kitty` on Windows
-    ///  - `~/.config/kitty` on Linux
-    ///  - `~/Library/Application Support/kitty` on macOS
-    ///
-    /// Fails if the file does not exist or if the file cannot be read.
-    pub fn load() -> Result<Self, StdErr> {
-        let config_dir = Self::dir_path();
-        let config_file = config_dir.join(".kattisrc");
+pub struct Kattisrc {
+    ini: Ini,
+}
 
-        if !config_file.exists() {
-            return Err(format!("could not find .kattisrc file. you must download your .kattisrc file from https://open.kattis.com/download/kattisrc and save it at {}",
-                               config_file.to_str().expect("config file path contained invalid unicode")).into());
+impl Kattisrc {
+    pub fn load() -> Result<Option<Self>, StdErr> {
+        let kattisrc_path = Self::path();
+
+        if !kattisrc_path.exists() {
+            return Ok(None);
         }
 
-        let cfg = match Ini::load_from_file(&config_file) {
-            Ok(c) => c,
-            Err(_) => return Err("failed to read .kattisrc file".into()),
-        };
+        let ini = Ini::load_from_file(&kattisrc_path)?;
 
-        Ok(Self {
-            ini: cfg,
-            dir: config_dir,
-            file: config_file,
-        })
+        Ok(Some(Self { ini }))
     }
 
-    /// Sets up the config directory and gives back the path of it.
-    pub fn init() -> io::Result<PathBuf> {
-        let dir_path = Self::dir_path();
-        fs::create_dir_all(dir_path.join("templates"))?;
-
-        Ok(dir_path)
-    }
-
-    /// Gets the config directory path depending on platform.
-    pub fn dir_path() -> PathBuf {
-        AppDirs::new(Some("kitty"), false)
-            .expect("failed to find where the kitty config directory should be located")
-            .config_dir
+    pub fn path() -> PathBuf {
+        let config_dir = ConfigValues::dir_path();
+        config_dir.join(".kattisrc")
     }
 
     /// Retrieves credentials from the config if the config file contains the
@@ -283,42 +285,17 @@ impl Config {
             None => Err("could not find login url under [kattis] in .kattisrc".into()),
         }
     }
+}
 
-    /// Retrieves the path to the directory containing user-defined templates.
-    pub fn get_templates_dir(&self) -> PathBuf {
-        self.dir.join("templates")
-    }
+impl Debug for Kattisrc {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut ini_buf = Vec::new();
+        self.ini
+            .write_to(&mut ini_buf)
+            .expect("failed to write ini bytes");
+        let ini_str = String::from_utf8(ini_buf).expect("failed to write ini to utf-8 string");
 
-    /// Retrieves the section from the config file with "kitty" as the header if
-    /// it exists.
-    fn get_kitty_section(&self) -> Option<&Properties> {
-        self.ini.section(Some("kitty"))
-    }
-
-    /// Retrieves a mutable section from the config file if it exists or creates
-    /// a mutable section into which key/value pairs can be added.
-    fn get_kitty_section_mut(&mut self) -> SectionSetter {
-        self.ini.with_section(Some("kitty"))
-    }
-
-    /// Writes the config to the config file.
-    pub fn save(&self) -> Result<(), StdErr> {
-        self.ini.write_to_file(&self.file)?;
-
-        Ok(())
-    }
-
-    /// Adds or overwrites the default language setting.
-    pub fn set_default_lang(&mut self, lang: &Language) {
-        let mut kitty_section = self.get_kitty_section_mut();
-        kitty_section.set("default_language", lang.file_ext());
-    }
-
-    /// Retrieves the default language setting from the config file.
-    pub fn get_default_lang(&self) -> Option<&Language> {
-        self.get_kitty_section()
-            .and_then(|s| s.get("default_language"))
-            .and_then(|l| cfg_vals.lang_from_file_ext(l))
+        f.debug_struct("Kattisrc").field("ini", &ini_str).finish()
     }
 }
 

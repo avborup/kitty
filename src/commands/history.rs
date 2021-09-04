@@ -1,6 +1,6 @@
-use crate::config::Config;
 use crate::kattis_client::KattisClient;
 use crate::StdErr;
+use crate::CFG as cfg;
 use clap::ArgMatches;
 use scraper::{Html, Selector};
 
@@ -13,9 +13,8 @@ pub async fn history(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         Err(_) => return Err("please provide --count as an integer".into()),
     };
 
-    let cfg = Config::load()?;
     let kc = KattisClient::new()?;
-    let history = get_history(&kc, &cfg).await?;
+    let history = get_history(&kc).await?;
 
     let n = if cmd.is_present("all") {
         history.len()
@@ -34,10 +33,15 @@ struct Submission {
     status_symbol: String,
 }
 
-async fn get_history(kc: &KattisClient, cfg: &Config) -> Result<Vec<Submission>, StdErr> {
-    let creds = cfg.get_credentials()?;
-    let login_url = cfg.get_login_url()?;
-    let profile_url = format!("https://{}/users/{}", cfg.get_host_name()?, creds.username);
+async fn get_history(kc: &KattisClient) -> Result<Vec<Submission>, StdErr> {
+    let kattisrc = cfg.kattisrc()?;
+    let creds = kattisrc.get_credentials()?;
+    let login_url = kattisrc.get_login_url()?;
+    let profile_url = format!(
+        "https://{}/users/{}",
+        kattisrc.get_host_name()?,
+        creds.username,
+    );
 
     kc.login(creds.clone(), login_url).await?;
     let res = kc.client.get(&profile_url).send().await?;
