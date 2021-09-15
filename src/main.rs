@@ -35,7 +35,6 @@ async fn main() {
         ("config", Some(sub)) => commands::config(sub).await,
         ("langs", Some(sub)) => commands::langs(sub).await,
         ("update", Some(sub)) => commands::update(sub).await,
-        ("watch", Some(sub)) => commands::watch(sub).await,
         _ => async { Ok(()) }.await,
     };
 
