@@ -30,7 +30,7 @@ pub fn init() -> App<'static, 'static> {
                          .help("Display how long each test case took to execute"))
                     .arg(Arg::with_name("fetch")
                          .long("fetch")
-                         .help("If the test folder does not exist, download the test files from Kattis"))
+                         .help("Download the test files from Kattis"))
                    )
         .subcommand(SubCommand::with_name("get")
                     .about("Fetches a problem from Kattis by creating a directory of the same name and downloading the official test cases")
