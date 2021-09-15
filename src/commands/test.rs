@@ -1,5 +1,6 @@
 use crate::commands::get;
 use crate::problem::Problem;
+use crate::utils::prompt_bool;
 use crate::StdErr;
 use clap::ArgMatches;
 use colored::Colorize;
@@ -17,7 +18,11 @@ pub async fn test(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let lang = problem.lang();
     let file = problem.file();
 
-    if cmd.is_present("fetch") {
+    let test_dir = problem.path().join("test");
+    if !test_dir.exists()
+        && (cmd.is_present("fetch")
+            || prompt_bool("no test cases found. do you want to fetch them from kattis?"))
+    {
         fetch_tests(&problem).await?;
     }
 
