@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::problem::Problem;
 use crate::StdErr;
 use clap::ArgMatches;
 use colored::Colorize;
@@ -6,12 +7,7 @@ use std::env;
 
 pub async fn open(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let id = match cmd.value_of("PROBLEM ID") {
-        Some(s) => {
-            let mut s = s.to_string();
-            s.retain(char::is_alphanumeric);
-
-            s
-        }
+        Some(s) => s.to_string(),
         None => {
             let cwd = match env::current_dir() {
                 Ok(d) => d,
@@ -30,7 +26,7 @@ pub async fn open(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         }
     };
 
-    if id.is_empty() {
+    if !Problem::id_is_legal(&id) {
         return Err(format!("\"{}\" is not a valid problem id", &id).into());
     }
 
