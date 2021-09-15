@@ -4,11 +4,14 @@ use crate::utils::prompt_bool;
 use crate::StdErr;
 use clap::ArgMatches;
 use colored::Colorize;
+use notify::{watcher, DebouncedEvent, RecursiveMode, Watcher};
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use std::sync::mpsc::channel;
 use std::time;
+use std::time::Duration;
 
 const CHECKBOX: &str = "\u{2705}"; // Green checkbox emoji
 const CROSSMARK: &str = "\u{274C}"; // Red X emoji
@@ -26,11 +29,19 @@ pub async fn test(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         fetch_tests(&problem).await?;
     }
 
-    let compile_cmd = lang.get_compile_cmd(&file)?;
-    let run_cmd = lang.get_run_cmd(&file)?;
-    let tests = problem.get_test_files()?;
+    let test_runner = || -> Result<(), StdErr> {
+        let compile_cmd = lang.get_compile_cmd(&file)?;
+        let run_cmd = lang.get_run_cmd(&file)?;
+        let tests = problem.get_test_files()?;
 
-    run_tests(compile_cmd, &run_cmd, &tests, cmd)?;
+        run_tests(compile_cmd, &run_cmd, &tests, cmd)
+    };
+
+    if cmd.is_present("watch") {
+        watch(&problem, &test_runner)?;
+    } else {
+        test_runner()?;
+    }
 
     Ok(())
 }
@@ -198,4 +209,40 @@ fn reformat_ans_str(s: &str) -> String {
         .map(str::trim)
         .collect::<Vec<&str>>()
         .join("\n")
+}
+
+fn watch<F: Fn() -> Result<(), StdErr>>(problem: &Problem, test_runner: F) -> Result<(), StdErr> {
+    let (tx, rx) = channel();
+    let mut watcher = watcher(tx, Duration::from_secs(1)).unwrap();
+
+    let src_file = problem.file();
+    watcher.watch(&src_file, RecursiveMode::NonRecursive)?;
+
+    let test_runner_wrapper = || {
+        if let Err(e) = test_runner() {
+            eprintln!("{}: {}", "error".bright_red(), e);
+        }
+
+        println!(
+            "\n{} {}...\n",
+            "watching".bright_cyan(),
+            src_file
+                .file_name()
+                .expect("couldn't read file name")
+                .to_string_lossy()
+                .underline(),
+        );
+    };
+
+    test_runner_wrapper();
+    loop {
+        match rx.recv() {
+            Ok(event) => {
+                if let DebouncedEvent::NoticeWrite(_) = event {
+                    test_runner_wrapper();
+                }
+            }
+            Err(_) => return Err("something went wrong during file watching".into()),
+        }
+    }
 }
