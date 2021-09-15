@@ -1,4 +1,4 @@
-use crate::commands::get::get_and_create_problem;
+use crate::commands::get::{create_problem_url, get_and_create_problem};
 use crate::kattis_client::KattisClient;
 use crate::StdErr;
 use crate::CFG as cfg;
@@ -13,22 +13,20 @@ use std::io::{self, Write};
 pub async fn random(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let lang_arg = cmd.value_of("language");
 
-    let kattisrc = cfg.kattisrc()?;
-    let host_name = kattisrc.get_host_name()?;
-
     let problems = get_front_page_problems(cmd).await?;
     let mut rng = thread_rng();
     let problem = match problems.choose(&mut rng) {
         Some(p) => p,
         None => return Err("could not find a random problem".into()),
     };
+    let problem_url = create_problem_url(&problem.id)?;
 
     println!("{}:    {}", "Problem".bright_cyan(), problem.id);
     println!("{}: {}", "Difficulty".bright_cyan(), problem.difficulty);
     println!(
         "{}:        {}",
         "URL".bright_cyan(),
-        format!("https://{}/problems/{}", &host_name, problem.id).underline()
+        problem_url.underline()
     );
 
     if !cmd.is_present("yes") {
@@ -45,7 +43,7 @@ pub async fn random(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         }
     }
 
-    get_and_create_problem(&problem.id, host_name, lang_arg).await?;
+    get_and_create_problem(&problem.id, lang_arg).await?;
 
     Ok(())
 }

@@ -1,3 +1,4 @@
+use crate::commands::get;
 use crate::problem::Problem;
 use crate::StdErr;
 use clap::ArgMatches;
@@ -16,6 +17,10 @@ pub async fn test(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let lang = problem.lang();
     let file = problem.file();
 
+    if cmd.is_present("fetch") {
+        fetch_tests(&problem).await?;
+    }
+
     let compile_cmd = lang.get_compile_cmd(&file)?;
     let run_cmd = lang.get_run_cmd(&file)?;
     let tests = problem.get_test_files()?;
@@ -23,6 +28,11 @@ pub async fn test(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     run_tests(compile_cmd, &run_cmd, &tests, cmd)?;
 
     Ok(())
+}
+
+async fn fetch_tests(problem: &Problem<'_>) -> Result<(), StdErr> {
+    let problem_url = get::create_problem_url(&problem.name())?;
+    get::fetch_tests(&problem.path(), &problem_url).await
 }
 
 fn run_tests(
