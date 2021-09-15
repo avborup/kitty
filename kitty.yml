@@ -41,7 +41,8 @@ languages:
 
 - name: Go
   file_extension: go
-  run_command: go run $SRC_PATH
+  compile_command: go build -o $EXE_PATH $SRC_PATH
+  run_command: $EXE_PATH
 
 - name: Haskell
   file_extension: hs
