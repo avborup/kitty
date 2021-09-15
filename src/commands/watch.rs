@@ -32,7 +32,10 @@ pub async fn watch(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         match rx.recv() {
             Ok(event) => {
                 if let DebouncedEvent::NoticeWrite(_) = event {
-                    test(cmd).await?;
+                    if let Err(e) = test(cmd).await {
+                        eprintln!("{}: {}", "error".bright_red(), e);
+                    }
+
                     println!();
                     print_watching();
                 }
