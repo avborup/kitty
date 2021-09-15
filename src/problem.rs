@@ -2,6 +2,7 @@ use crate::lang::Language;
 use crate::StdErr;
 use crate::CFG as cfg;
 use clap::ArgMatches;
+use regex::Regex;
 use std::collections::HashMap;
 use std::env;
 use std::io;
@@ -63,6 +64,10 @@ impl<'a> Problem<'a> {
             }
             .into()),
         }
+    }
+
+    pub fn id_is_legal(id: &str) -> bool {
+        Regex::new(r"^[\w\d\.]+$").unwrap().is_match(id)
     }
 
     pub fn get_path(path_arg: &str) -> Result<PathBuf, StdErr> {

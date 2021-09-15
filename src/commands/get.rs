@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::lang::Language;
+use crate::problem::Problem;
 use crate::StdErr;
 use crate::CFG as cfg;
 use clap::ArgMatches;
@@ -16,8 +17,8 @@ pub async fn get(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let id = cmd.value_of("PROBLEM ID").unwrap();
     let lang_arg = cmd.value_of("language");
 
-    if !id.chars().all(char::is_alphanumeric) {
-        return Err("problem id must only contain alphanumeric characters".into());
+    if !Problem::id_is_legal(id) {
+        return Err("problem id must only contain alphanumeric characters and periods".into());
     }
 
     let kattisrc = cfg.kattisrc()?;
