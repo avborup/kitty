@@ -39,7 +39,7 @@ $ kitty submit [PATH TO PROBLEM]
 To upload your solution, Kitty needs access to your `.kattisrc` file. Run the command, and you will receive an error telling you what to do in order to set it up.
 
 ### Templates
-You can define your own custom templates for your preffered programming language. If you use `kitty get`, then you can add an optional parameter `--lang`, specifying what template you want to use. For example, in your kitty config directory, you can create the file `kitty/templates/template.java` containing the following code:
+You can define your own custom templates for your preferred programming language. If you use `kitty get`, you can add an optional parameter `--lang`, specifying what template you want to use. For example, in your kitty config directory, you can create the file `kitty/templates/template.java` containing the following code:
 ```java
 import java.util.Scanner;
 
@@ -57,22 +57,24 @@ $ kitty get --lang java
 ```
 which will create a file called `<PROBLEM ID>.java` that you can use.
 
-Alternatively, you can set the default language for kitty to use so that you don't need to specify the language argument every time you fetch a problem. Do this by running:
-```sh
-$ kitty config --default-lang java
-```
-Of course this works with any supported kitty language - not just Java.
+Alternatively, you can set the default language for kitty to use so that you don't need to specify the language argument every time you fetch a problem. See the following configuration section for more.
 
-### Supported languages
-To see which languages are supported by kitty and how to refer to a specific language when using other kitty commands, run
-```sh
+### Configuration
+Kitty does not store information about languages (compile commands, file extensions, run commands etc.) - instead it is you who must provide the languages and that information. This also means you are completely free to specify compiler flags, add new languages and so forth.
+
+The configuration is done via a YAML file called `kitty.yml` located in your kitty configuration folder. To find the location of that, run `kitty config --location`. This repository contains an example configuration with comments describing the different configuration options: [kitty.yml](https://github.com/avborup/kitty/blob/master/kitty.yml). Feel free to simply download that file.
+
+To see which languages kitty have picked up and how to refer to a specific language when using other kitty commands, run
+```
 $ kitty langs
 Name       Extension
+C#         cs
+Go         go
+Haskell    hs
 Java       java
 Python 3   py
 Rust       rs
 ```
-These are the supported languages at the time of writing, but more will be added (or have potentially already been added).
 
 ## Installation
 ### Cargo

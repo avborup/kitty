@@ -1,7 +1,7 @@
 use crate::commands::get::get_and_create_problem;
-use crate::config::Config;
 use crate::kattis_client::KattisClient;
 use crate::StdErr;
+use crate::CFG as cfg;
 use clap::ArgMatches;
 use colored::Colorize;
 use rand::seq::SliceRandom;
@@ -13,10 +13,10 @@ use std::io::{self, Write};
 pub async fn random(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let lang_arg = cmd.value_of("language");
 
-    let cfg = Config::load()?;
-    let host_name = cfg.get_host_name()?;
+    let kattisrc = cfg.kattisrc()?;
+    let host_name = kattisrc.get_host_name()?;
 
-    let problems = get_front_page_problems(cmd, &cfg).await?;
+    let problems = get_front_page_problems(cmd).await?;
     let mut rng = thread_rng();
     let problem = match problems.choose(&mut rng) {
         Some(p) => p,
@@ -45,7 +45,7 @@ pub async fn random(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         }
     }
 
-    get_and_create_problem(&problem.id, host_name, lang_arg, &cfg).await?;
+    get_and_create_problem(&problem.id, host_name, lang_arg).await?;
 
     Ok(())
 }
@@ -57,13 +57,11 @@ struct SimpleProblem {
     difficulty: String,
 }
 
-async fn get_front_page_problems(
-    cmd: &ArgMatches<'_>,
-    cfg: &Config,
-) -> Result<Vec<SimpleProblem>, StdErr> {
-    let creds = cfg.get_credentials()?;
-    let login_url = cfg.get_login_url()?;
-    let host_name = cfg.get_host_name()?;
+async fn get_front_page_problems(cmd: &ArgMatches<'_>) -> Result<Vec<SimpleProblem>, StdErr> {
+    let kattisrc = cfg.kattisrc()?;
+    let creds = kattisrc.get_credentials()?;
+    let login_url = kattisrc.get_login_url()?;
+    let host_name = kattisrc.get_host_name()?;
 
     let sort_by_arg = cmd.value_of("sort").unwrap();
     let sort_by = match sort_by_arg {

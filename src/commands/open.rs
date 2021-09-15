@@ -1,6 +1,6 @@
-use crate::config::Config;
 use crate::problem::Problem;
 use crate::StdErr;
+use crate::CFG as cfg;
 use clap::ArgMatches;
 use colored::Colorize;
 use std::env;
@@ -30,8 +30,8 @@ pub async fn open(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         return Err(format!("\"{}\" is not a valid problem id", &id).into());
     }
 
-    let cfg = Config::load()?;
-    let host_name = cfg.get_host_name()?;
+    let kattisrc = cfg.kattisrc()?;
+    let host_name = kattisrc.get_host_name()?;
     let url = format!("https://{}/problems/{}", host_name, &id);
 
     if webbrowser::open(&url).is_err() {

@@ -2,6 +2,7 @@ use crate::config::Config;
 use crate::lang::Language;
 use crate::problem::Problem;
 use crate::StdErr;
+use crate::CFG as cfg;
 use clap::ArgMatches;
 use colored::Colorize;
 use std::env;
@@ -20,10 +21,10 @@ pub async fn get(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         return Err("problem id must only contain alphanumeric characters and periods".into());
     }
 
-    let cfg = Config::load()?;
-    let host_name = cfg.get_host_name()?;
+    let kattisrc = cfg.kattisrc()?;
+    let host_name = kattisrc.get_host_name()?;
 
-    get_and_create_problem(id, host_name, lang_arg, &cfg).await?;
+    get_and_create_problem(id, host_name, lang_arg).await?;
 
     Ok(())
 }
@@ -32,7 +33,6 @@ pub async fn get_and_create_problem(
     id: &str,
     host_name: &str,
     lang_arg: Option<&str>,
-    cfg: &Config,
 ) -> Result<(), StdErr> {
     let p_url = format!("https://{}/problems/{}", host_name, id);
     let p_res = reqwest::get(&p_url).await?;
@@ -66,13 +66,16 @@ pub async fn get_and_create_problem(
     fetch_tests(&p_dir, &p_url).await?;
 
     let lang = if let Some(l) = lang_arg {
-        Some(Language::from_file_ext(l))
+        match cfg.lang_from_file_ext(l) {
+            Some(v) => Some(v),
+            None => return Err(format!("could not find a language to use for .{} files", l).into()),
+        }
     } else {
-        cfg.get_default_lang()
+        cfg.default_language()
     };
 
     if let Some(l) = lang {
-        init_file(cfg, id, &l)?;
+        init_file(id, l)?;
     }
 
     println!("{} problem \"{}\"", "created".bright_green(), id);
@@ -142,13 +145,8 @@ async fn fetch_tests(parent_dir: &Path, problem_url: &str) -> Result<(), StdErr>
     Ok(())
 }
 
-pub fn init_file(cfg: &Config, problem_id: &str, lang: &Language) -> Result<(), StdErr> {
-    if let Language::Unknown = lang {
-        println!("kitty cannot handle the given language and will skip creating the file for you.");
-        return Ok(());
-    }
-
-    let templates_dir = cfg.get_templates_dir();
+pub fn init_file(problem_id: &str, lang: &Language) -> Result<(), StdErr> {
+    let templates_dir = Config::templates_dir_path();
 
     if !templates_dir.exists() {
         println!(

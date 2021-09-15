@@ -1,5 +1,4 @@
 use crate::config::Config;
-use crate::lang::Language;
 use crate::StdErr;
 use clap::ArgMatches;
 use colored::Colorize;
@@ -10,7 +9,7 @@ pub async fn config(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
             Ok(p) => {
                 let path = p.to_str().expect("path contained invalid unicode");
                 println!(
-                    "{} config directory at {}. you should place your .kattisrc here",
+                    "{} config directory at {}. you should place your .kattisrc and kitty.yml here",
                     "initialised".bright_green(),
                     path
                 );
@@ -26,25 +25,6 @@ pub async fn config(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         let path_str = dir_path.to_str().expect("path contained invalid unicode");
 
         println!("config directory path: {}", path_str.underline());
-    }
-
-    let mut cfg = Config::load()?;
-
-    if let Some(lang_str) = cmd.value_of("default language") {
-        let lang = Language::from_file_ext(lang_str);
-
-        if let Language::Unknown = lang {
-            return Err(format!("kitty does not know how to handle .{} files", lang_str).into());
-        }
-
-        cfg.set_default_lang(&lang);
-        cfg.save()?;
-
-        println!(
-            "{} set default language to {}",
-            "successfully".bright_green(),
-            lang.to_string()
-        );
     }
 
     Ok(())

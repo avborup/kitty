@@ -16,18 +16,8 @@ pub async fn test(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     let lang = problem.lang();
     let file = problem.file();
 
-    // Fetch compilation instructions: command to execute and path of executable
-    let (compile_cmd, exec_path) = lang.get_compile_instructions(&file);
-
-    // Get the terminal command to run in order to run the source file.
-    let run_cmd = if let Some(cmd) = lang.get_run_cmd(&exec_path) {
-        cmd
-    } else {
-        return Err(format!("kitty doesn't know how to run {} files", lang).into());
-    };
-
-    // Collect all pairs of test files from the "test" subfolder (a pair is one
-    // .in file and one .ans file)
+    let compile_cmd = lang.get_compile_cmd(&file)?;
+    let run_cmd = lang.get_run_cmd(&file)?;
     let tests = problem.get_test_files()?;
 
     run_tests(compile_cmd, &run_cmd, &tests, cmd)?;
@@ -43,9 +33,9 @@ fn run_tests(
 ) -> Result<(), StdErr> {
     if let Some(cmd) = compile_cmd {
         let mut compile_parts = cmd.iter();
-        // We always define commands ourselves in this source code, so we can
-        // guarantee that parts will always have at least one entry.
-        let compile_prog = compile_parts.next().unwrap();
+        let compile_prog = compile_parts
+            .next()
+            .ok_or_else::<StdErr, _>(|| "compile command was empty".into())?;
         let compile_args: Vec<_> = compile_parts.collect();
 
         let mut command = Command::new(compile_prog);
@@ -74,9 +64,9 @@ fn run_tests(
     }
 
     let mut run_parts = run_cmd.iter();
-    // We always define commands ourselves in this source code, so we can
-    // guarantee that parts will always have at least one entry.
-    let run_prog = run_parts.next().unwrap();
+    let run_prog = run_parts
+        .next()
+        .ok_or_else::<StdErr, _>(|| "run command was empty".into())?;
     let run_args: Vec<_> = run_parts.collect();
     let mut fails = 0;
 

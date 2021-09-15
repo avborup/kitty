@@ -1,0 +1,58 @@
+# The file extension of the default language to use when creating new solution
+# folders. The corresponding template will be generated in the folder. Note that
+# the file extension must belong to one of the defined languages below.
+default_language: cs
+
+# A list of languages that kitty can use.
+languages:
+  # Languages must contain a display name that matches Kattis' name for the
+  # language exactly - i.e. the precise text in the language dropdown menu at
+  # https://open.kattis.com/submit. If you get an error saying "something went
+  # wrong during submission", this may be a likely reason!
+- name: Rust
+  # They must also be connected to a file extension such that kitty knows which
+  # language a file is written in.
+  file_extension: rs
+  # An optional shell command to compile the program. If the language does not
+  # require a separate compilation step before running the code, omit this.
+  compile_command: rustc --out-dir $DIR_PATH $SRC_PATH
+  # A shell command to run the program. For most compiled languages, a path to
+  # the compiled executable suffices.
+  run_command: $EXE_PATH
+  # Compilation and run commands can make use of variables as illustrated by the
+  # examples. The variables, $<name>, will be replaced with their value for the
+  # given solution folder. Available variables are:
+  #   - $SRC_PATH: The path to the program's source code file
+  #   - $SRC_FILE_NAME_NO_EXT: The name of the source code file, stripped of its
+  #         file extension (for example: Program.java -> Program)
+  #   - $DIR_PATH: The path to the solution folder containing the program source
+  #   - $EXE_PATH: The path to the compiled executable
+
+- name: C#
+  file_extension: cs
+  run_command: $EXE_PATH
+  # Some languages require different tools across platforms. Kitty's solution to
+  # this is to use windows/unix settings. Any setting you write under windows or
+  # unix will overwrite the one in the base level.
+  windows:
+    compile_command: csc /out:$EXE_PATH $SRC_PATH
+  unix:
+    compile_command: mcs -out:$EXE_PATH $SRC_PATH
+
+- name: Go
+  file_extension: go
+  run_command: go run $SRC_PATH
+
+- name: Haskell
+  file_extension: hs
+  compile_command: ghc -O2 -ferror-spans -threaded -rtsopts $SRC_PATH
+  run_command: $EXE_PATH
+
+- name: Java
+  file_extension: java
+  compile_command: javac $SRC_PATH
+  run_command: java -cp $DIR_PATH $SRC_FILE_NAME_NO_EXT
+
+- name: Python 3
+  file_extension: py
+  run_command: python $SRC_PATH

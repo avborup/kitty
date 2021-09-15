@@ -1,7 +1,8 @@
-use crate::config::{Config, Credentials};
+use crate::config::Credentials;
 use crate::kattis_client::KattisClient;
 use crate::problem::Problem;
 use crate::StdErr;
+use crate::CFG as cfg;
 use clap::ArgMatches;
 use colored::Colorize;
 use regex::Regex;
@@ -45,10 +46,10 @@ pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         }
     }
 
-    let cfg = Config::load()?;
-    let creds = cfg.get_credentials()?;
-    let submit_url = cfg.get_submit_url()?;
-    let login_url = cfg.get_login_url()?;
+    let kattisrc = cfg.kattisrc()?;
+    let creds = kattisrc.get_credentials()?;
+    let submit_url = kattisrc.get_submit_url()?;
+    let login_url = kattisrc.get_login_url()?;
 
     let client = KattisClient::new()?;
     client.login(creds.clone(), login_url).await?;
@@ -58,7 +59,7 @@ pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         None => return Err("something went wrong during submission".into()),
     };
 
-    let submission_url = format!("{}/{}", cfg.get_submissions_url()?, &id);
+    let submission_url = format!("{}/{}", kattisrc.get_submissions_url()?, &id);
 
     println!(
         "{} solution to {}",
@@ -71,9 +72,9 @@ pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     Ok(())
 }
 
-async fn submit_problem(
+async fn submit_problem<'a>(
     kc: &KattisClient,
-    problem: &Problem,
+    problem: &Problem<'_>,
     submit_url: &str,
 ) -> Result<Option<String>, StdErr> {
     let file_path = problem.file();
@@ -91,7 +92,6 @@ async fn submit_problem(
     let form = Form::new()
         .text("problem", problem.name())
         .text("language", problem.lang().to_string())
-        .text("mainclass", problem.get_main_class().unwrap_or_default())
         .part("sub_file[]", file_part)
         .text("submit_ctr", "2")
         .text("submit", "true")
