@@ -159,7 +159,11 @@ impl<'a> Problem<'a> {
         let test_path = self.path.join("test");
 
         if !test_path.exists() {
-            return Err(format!(r#"subfolder "test" is missing in {}"#, self.path_str()).into());
+            return Err(format!(
+                r#"subfolder "test" is missing in {}. consider using the --fetch flag to retrieve test files."#,
+                self.path_str()
+            )
+            .into());
         }
 
         let mut in_files = HashMap::new();
@@ -221,5 +225,9 @@ impl<'a> Problem<'a> {
 
     pub fn name(&self) -> String {
         self.name.clone()
+    }
+
+    pub fn path(&self) -> PathBuf {
+        self.path.clone()
     }
 }

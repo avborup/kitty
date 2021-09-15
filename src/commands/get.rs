@@ -21,20 +21,13 @@ pub async fn get(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         return Err("problem id must only contain alphanumeric characters and periods".into());
     }
 
-    let kattisrc = cfg.kattisrc()?;
-    let host_name = kattisrc.get_host_name()?;
-
-    get_and_create_problem(id, host_name, lang_arg).await?;
+    get_and_create_problem(id, lang_arg).await?;
 
     Ok(())
 }
 
-pub async fn get_and_create_problem(
-    id: &str,
-    host_name: &str,
-    lang_arg: Option<&str>,
-) -> Result<(), StdErr> {
-    let p_url = format!("https://{}/problems/{}", host_name, id);
+pub async fn get_and_create_problem(id: &str, lang_arg: Option<&str>) -> Result<(), StdErr> {
+    let p_url = create_problem_url(id)?;
     let p_res = reqwest::get(&p_url).await?;
 
     let p_status = p_res.status();
@@ -83,11 +76,16 @@ pub async fn get_and_create_problem(
     Ok(())
 }
 
-async fn fetch_tests(parent_dir: &Path, problem_url: &str) -> Result<(), StdErr> {
+pub fn create_problem_url(id: &str) -> Result<String, StdErr> {
+    let host_name = cfg.kattisrc()?.get_host_name()?;
+    Ok(format!("https://{}/problems/{}", host_name, id))
+}
+
+pub async fn fetch_tests(parent_dir: &Path, problem_url: &str) -> Result<(), StdErr> {
     let t_dir = parent_dir.join("test");
     let t_dir = t_dir.as_path();
     if fs::create_dir(t_dir).is_err() {
-        return Err("failed to create problem directory at this location".into());
+        return Err("failed to create test directory at this location".into());
     }
 
     let zip_url = format!("{}/file/statement/samples.zip", problem_url);
