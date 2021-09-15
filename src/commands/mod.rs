@@ -7,6 +7,7 @@ mod random;
 mod submit;
 mod test;
 mod update;
+mod watch;
 
 pub use config::config;
 pub use get::get;
@@ -17,3 +18,4 @@ pub use random::random;
 pub use submit::submit;
 pub use test::test;
 pub use update::update;
+pub use watch::watch;
