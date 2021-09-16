@@ -36,6 +36,10 @@ jobs:
       - name: Build binary
         run: cargo build --release
 
+      - name: Strip binary
+        if: runner.os == 'Linux' || runner.os == 'macOS'
+        run: strip target/release/${{ matrix.artifact_name }}
+
       - name: Upload binary to release
         uses: svenstaro/upload-release-action@v1-release
         with:
