@@ -77,6 +77,12 @@ Rust       rs
 ```
 
 ## Installation
+### Installation script (Windows only)
+You can use the following PowerShell command to install kitty. This will download the latest binary and a default config file.
+
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://github.com/Duckth/kitty/blob/master/scripts/install.ps1'))
+```
 ### Cargo
 You can install Kitty using cargo.
 ```sh
