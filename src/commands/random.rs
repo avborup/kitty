@@ -43,7 +43,7 @@ pub async fn random(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         }
     }
 
-    get_and_create_problem(&problem.id, None, lang_arg).await?;
+    get_and_create_problem(&problem.id, lang_arg, cmd).await?;
 
     Ok(())
 }
