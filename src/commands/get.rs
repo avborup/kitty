@@ -14,7 +14,6 @@ use zip::ZipArchive;
 pub async fn get(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     // We can unwrap here because clap will exit automatically when this arg is
     // not present.
-
     let id = cmd.value_of("PROBLEM ID").unwrap();
     let lang_arg = cmd.value_of("language");
 
