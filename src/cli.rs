@@ -1,7 +1,7 @@
 use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
 
 pub fn init() -> App<'static, 'static> {
-     App::new("kitty")
+    App::new("kitty")
         .version(crate_version!())
         .author(crate_authors!())
         .about("A tool for interacting with Kattis via the command line")

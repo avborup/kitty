@@ -26,7 +26,11 @@ pub async fn get(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     Ok(())
 }
 
-pub async fn get_and_create_problem(id: &str, lang_arg: Option<&str>, cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
+pub async fn get_and_create_problem(
+    id: &str,
+    lang_arg: Option<&str>,
+    cmd: &ArgMatches<'_>,
+) -> Result<(), StdErr> {
     let p_url = create_problem_url(id)?;
     let p_res = reqwest::get(&p_url).await?;
 
@@ -144,9 +148,11 @@ pub async fn fetch_tests(parent_dir: &Path, problem_url: &str) -> Result<(), Std
 }
 
 pub fn init_file(problem_id: &str, lang: &Language, cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
-    let id_no_domain = problem_id.split(".").last().unwrap();
-    let remove_domain = cmd.is_present("no-domain");
-
+    let filename = if cmd.is_present("no-domain") {
+        problem_id.split(".").last().unwrap()
+    } else {
+        problem_id
+    };
     let templates_dir = Config::templates_dir_path();
 
     if !templates_dir.exists() {
@@ -167,13 +173,13 @@ pub fn init_file(problem_id: &str, lang: &Language, cmd: &ArgMatches<'_>) -> Res
         return Ok(());
     }
     let template = match fs::read_to_string(&template_file) {
-        Ok(t) => t.replace("$FILENAME", if remove_domain {id_no_domain} else {problem_id}),
+        Ok(t) => t.replace("$FILENAME", filename),
         Err(_) => return Err(format!("failed to read {}", &template_file_name).into()),
     };
 
     let cwd = env::current_dir()?;
     let p_dir = cwd.join(problem_id);
-    let problem_file_name = format!("{}.{}", if remove_domain {id_no_domain} else {problem_id}, lang.file_ext());
+    let problem_file_name = format!("{}.{}", filename, lang.file_ext());
     let problem_file = p_dir.join(&problem_file_name);
     if fs::write(problem_file, template).is_err() {
         return Err(format!("failed to create template file {}", template_file_name).into());
