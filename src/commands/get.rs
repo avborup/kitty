@@ -20,13 +20,17 @@ pub async fn get(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     if !Problem::id_is_legal(id) {
         return Err("problem id must only contain alphanumeric characters and periods".into());
     }
-
-    get_and_create_problem(id, lang_arg).await?;
+    if cmd.is_present("no-domain") {
+        let id_no_domain = id.split(".").last().unwrap();
+        get_and_create_problem(id, Some(id_no_domain), lang_arg).await?;
+    } else {
+        get_and_create_problem(id, None, lang_arg).await?;
+    }
 
     Ok(())
 }
 
-pub async fn get_and_create_problem(id: &str, lang_arg: Option<&str>) -> Result<(), StdErr> {
+pub async fn get_and_create_problem(mut id: &str, id_no_domain: Option<&str>, lang_arg: Option<&str>) -> Result<(), StdErr> {
     let p_url = create_problem_url(id)?;
     let p_res = reqwest::get(&p_url).await?;
 
@@ -42,6 +46,10 @@ pub async fn get_and_create_problem(id: &str, lang_arg: Option<&str>) -> Result<
                 .into())
             }
         }
+    }
+
+    if let Some(no_domain) = id_no_domain {
+        id = no_domain;
     }
 
     let cwd = env::current_dir()?;
@@ -144,8 +152,6 @@ pub async fn fetch_tests(parent_dir: &Path, problem_url: &str) -> Result<(), Std
 }
 
 pub fn init_file(problem_id: &str, lang: &Language) -> Result<(), StdErr> {
-    let id_no_domain = problem_id.split(".").last().unwrap();
-
     let templates_dir = Config::templates_dir_path();
 
     if !templates_dir.exists() {
@@ -166,13 +172,13 @@ pub fn init_file(problem_id: &str, lang: &Language) -> Result<(), StdErr> {
         return Ok(());
     }
     let template = match fs::read_to_string(&template_file) {
-        Ok(t) => t.replace("$FILENAME", id_no_domain),
+        Ok(t) => t.replace("$FILENAME", problem_id),
         Err(_) => return Err(format!("failed to read {}", &template_file_name).into()),
     };
 
     let cwd = env::current_dir()?;
     let p_dir = cwd.join(problem_id);
-    let problem_file_name = format!("{}.{}", id_no_domain, lang.file_ext());
+    let problem_file_name = format!("{}.{}", problem_id, lang.file_ext());
     let problem_file = p_dir.join(&problem_file_name);
     if fs::write(problem_file, template).is_err() {
         return Err(format!("failed to create template file {}", template_file_name).into());

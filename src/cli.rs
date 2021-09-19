@@ -1,7 +1,7 @@
 use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
 
 pub fn init() -> App<'static, 'static> {
-    App::new("kitty")
+     App::new("kitty")
         .version(crate_version!())
         .author(crate_authors!())
         .about("A tool for interacting with Kattis via the command line")
@@ -49,6 +49,10 @@ pub fn init() -> App<'static, 'static> {
                          .long("lang")
                          .takes_value(true)
                          .help("Programming language to use the template for. Write the typical file extension for the language (java for Java, py for python, js for JavaScript, etc.)."))
+                    .arg(Arg::with_name("no-domain")
+                         .short("n")
+                         .long("no-domain")
+                         .help("Removes the domain name when creating problem files"))
                    )
         .subcommand(SubCommand::with_name("submit")
                     .about("Submits a solution to Kattis")
