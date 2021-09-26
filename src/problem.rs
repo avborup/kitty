@@ -74,7 +74,7 @@ impl<'a> Problem<'a> {
         // If you run a command such as `kitty test '.\test folder\skocimis\'`,
         // the evaluated path is .\test folder\skocimis\" (notice the trailing
         // quotation mark) - we protect against that here.
-        let path_str = if path_arg.ends_with("\"") {
+        let path_str = if path_arg.ends_with('"') {
             path_arg.chars().take(path_arg.len() - 1).collect()
         } else {
             path_arg.to_string()

@@ -168,7 +168,7 @@ pub fn prepare_cmd(cmd: &str, file_path: &Path) -> Option<Vec<String>> {
     let exe_path = file_path.with_extension(EXE_EXTENSION);
     let file_name_no_ext = file_path.file_stem().unwrap().to_str().unwrap();
 
-    shlex::split(&cmd).map(|args| {
+    shlex::split(cmd).map(|args| {
         args.iter()
             .map(|arg| {
                 arg.replace("$SRC_PATH", &path_to_str(file_path))
