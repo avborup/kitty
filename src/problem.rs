@@ -71,7 +71,16 @@ impl<'a> Problem<'a> {
     }
 
     pub fn get_path(path_arg: &str) -> Result<PathBuf, StdErr> {
-        let rel_path = Path::new(path_arg).to_path_buf();
+        // If you run a command such as `kitty test '.\test folder\skocimis\'`,
+        // the evaluated path is .\test folder\skocimis\" (notice the trailing
+        // quotation mark) - we protect against that here.
+        let path_str = if path_arg.ends_with('"') {
+            path_arg.chars().take(path_arg.len() - 1).collect()
+        } else {
+            path_arg.to_string()
+        };
+
+        let rel_path = Path::new(&path_str).to_path_buf();
 
         let path = if rel_path.is_absolute() {
             rel_path
@@ -80,14 +89,12 @@ impl<'a> Problem<'a> {
             cwd.join(rel_path)
         };
 
-        let path_str = path.to_str().expect("path did not contain valid unicode");
-
         if !path.exists() {
-            return Err(format!("not found: {}", path_str).into());
+            return Err(format!("not found: {}", path.display()).into());
         }
 
         if !path.is_dir() {
-            return Err(format!("not a directory: {}", path_str).into());
+            return Err(format!("not a directory: {}", path.display()).into());
         }
 
         Ok(path)

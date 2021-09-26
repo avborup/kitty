@@ -168,13 +168,16 @@ pub fn prepare_cmd(cmd: &str, file_path: &Path) -> Option<Vec<String>> {
     let exe_path = file_path.with_extension(EXE_EXTENSION);
     let file_name_no_ext = file_path.file_stem().unwrap().to_str().unwrap();
 
-    let cmd = cmd
-        .replace("$SRC_PATH", &path_to_str(file_path))
-        .replace("$SRC_FILE_NAME_NO_EXT", file_name_no_ext)
-        .replace("$DIR_PATH", &path_to_str(&dir_path))
-        .replace("$EXE_PATH", &path_to_str(&exe_path));
-
-    shlex::split(&cmd)
+    shlex::split(cmd).map(|args| {
+        args.iter()
+            .map(|arg| {
+                arg.replace("$SRC_PATH", &path_to_str(file_path))
+                    .replace("$SRC_FILE_NAME_NO_EXT", file_name_no_ext)
+                    .replace("$DIR_PATH", &path_to_str(&dir_path))
+                    .replace("$EXE_PATH", &path_to_str(&exe_path))
+            })
+            .collect()
+    })
 }
 
 pub struct Kattisrc {
