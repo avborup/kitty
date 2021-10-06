@@ -204,9 +204,9 @@ fn run_tests(
 
 fn reformat_ans_str(s: &str) -> String {
     s.replace("\r\n", "\n")
-        .trim()
+        .trim_end()
         .lines()
-        .map(str::trim)
+        .map(str::trim_end)
         .collect::<Vec<&str>>()
         .join("\n")
 }
