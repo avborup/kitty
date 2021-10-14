@@ -38,8 +38,7 @@ impl<'a> Problem<'a> {
 
         // Find which source file to run. If provided as an argument, that takes
         // precedence.
-        let file_arg = cmd.value_of("file");
-        let file = Self::get_source_file(&path, file_arg)?;
+        let file = Self::get_source_file(&path, cmd)?;
 
         // Find which programming language the solution is written in. If arg is
         // provided, that takes precedence.
@@ -134,27 +133,33 @@ impl<'a> Problem<'a> {
         Ok(sources)
     }
 
-    pub fn get_source_file(dir: &Path, file_arg: Option<&str>) -> Result<PathBuf, StdErr> {
-        let files = Self::get_valid_source_files(dir)?;
+    pub fn get_source_file(dir: &Path, cmd: &ArgMatches) -> Result<PathBuf, StdErr> {
+        let file_path = match cmd.value_of("file") {
+            Some(file_arg) => {
+                let path = dir.join(file_arg);
 
-        if files.is_empty() {
-            return Err(format!("no source files found in {}", path_str(dir)).into());
-        } else if files.len() > 1 && file_arg.is_none() {
-            return Err(
-                "multiple source files found - pass the correct source file as an argument".into(),
-            );
-        }
+                if !path.exists() {
+                    return Err(
+                        format!("provided source file not found: {}", path_str(&path)).into(),
+                    );
+                }
 
-        let file_path = if let Some(file) = file_arg {
-            let path = dir.join(file);
-
-            if !path.exists() {
-                return Err(format!("provided source file not found: {}", path_str(&path)).into());
+                path
             }
+            None => {
+                let files = Self::get_valid_source_files(dir)?;
 
-            path
-        } else {
-            files[0].clone()
+                if files.is_empty() {
+                    return Err(format!("no source files found in {}", path_str(dir)).into());
+                } else if files.len() > 1 {
+                    return Err(
+                        "multiple source files found - pass the correct source file as an argument"
+                            .into(),
+                    );
+                }
+
+                files[0].clone()
+            }
         };
 
         Ok(file_path)
