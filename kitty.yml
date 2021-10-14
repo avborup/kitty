@@ -57,3 +57,8 @@ languages:
 - name: Python 3
   file_extension: py
   run_command: python $SRC_PATH
+
+- name: C++
+  file_extension: cpp
+  compile_command: g++ -g -O2 -std=gnu++17 -static $SRC_PATH -o $EXE_PATH
+  run_command: $EXE_PATH
