@@ -67,6 +67,10 @@ pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
         &submission_url.underline()
     );
 
+    if cmd.is_present("open") && webbrowser::open(&submission_url).is_err() {
+        eprintln!("failed to open {} in your browser", &submission_url);
+    }
+
     show_submission_status(&client, creds, &submission_url, login_url).await?;
 
     Ok(())
