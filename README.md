@@ -92,15 +92,11 @@ $ cargo install --git https://github.com/KongBorup/kitty
 ### Prebuilt binaries
 You can find prebuilt binaries in the [releases section](https://github.com/KongBorup/kitty/releases) for Windows, Linux, and macOS. Once the binary is downloaded, you should be ready to go. Remember to make sure that the binary is in your PATH.
 
-As an example, to install kitty in `~/bin` on Ubuntu, you can run the following commands:
+As an example, to install kitty in `/usr/local/bin` on Ubuntu, you can run the following command:
 ```sh
-$ mkdir ~/bin
-$ cd ~/bin
-$ curl -L https://github.com/KongBorup/kitty/releases/latest/download/kitty-x86_64-unknown-linux-gnu > kitty
-$ chmod +x kitty
-$ PATH=~/bin:$PATH
+(cd /usr/local/bin && curl -L https://github.com/avborup/kitty/releases/latest/download/kitty-x86_64-unknown-linux-gnu > kitty && chmod +x kitty)
 ```
-At this point, you should be able to freely run `kitty` anywhere on your system. Beware though; using this method, you will not have kitty in your PATH when you restart your terminal. To add it permanently, you can `export` the `bin` directory in your `.bashrc`, `.zshrc` or whichever terminal config file you use.
+At this point, you should be able to freely run `kitty` anywhere on your system. If you get a permission denied error, maybe you need to give yourself access to the install folder via `sudo chown -R $(whoami) /usr/local/bin`.
 
 ## Updating
 To update kitty, you can run `kitty update`.
