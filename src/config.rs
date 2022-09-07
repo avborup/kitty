@@ -112,11 +112,7 @@ mod config_parser {
         let default_language = doc["default_language"].as_str().map(str::to_string);
         let languages = doc["languages"]
             .as_vec()
-            .map(|v| {
-                v.iter()
-                    .map(|b| lang_from_yml(b))
-                    .collect::<Result<Vec<_>, _>>()
-            })
+            .map(|v| v.iter().map(lang_from_yml).collect::<Result<Vec<_>, _>>())
             .unwrap_or_else(|| Ok(Vec::new()))?;
 
         let config = Config {
