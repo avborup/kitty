@@ -48,9 +48,7 @@ pub async fn random(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     Ok(())
 }
 
-#[derive(Debug)]
 struct SimpleProblem {
-    name: String,
     id: String,
     difficulty: String,
 }
@@ -107,7 +105,6 @@ async fn get_front_page_problems(cmd: &ArgMatches<'_>) -> Result<Vec<SimpleProbl
             Some(t) => t,
             None => continue,
         };
-        let name: String = name_el.text().collect();
         let id_match = name_el
             .value()
             .attr("href")
@@ -124,11 +121,7 @@ async fn get_front_page_problems(cmd: &ArgMatches<'_>) -> Result<Vec<SimpleProbl
             None => continue,
         };
 
-        problems.push(SimpleProblem {
-            name,
-            id,
-            difficulty,
-        });
+        problems.push(SimpleProblem { id, difficulty });
     }
 
     Ok(problems)
