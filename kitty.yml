@@ -62,3 +62,9 @@ languages:
   file_extension: cpp
   compile_command: g++ -g -O2 -std=gnu++17 -static $SRC_PATH -o $EXE_PATH
   run_command: $EXE_PATH
+
+- name: C
+  file_extension: c
+  # The -static flag has been omitted since it causes issues on macOS.
+  compile_command: gcc -g -O2 -std=gnu11 $SRC_PATH -o $EXE_PATH
+  run_command: $EXE_PATH
