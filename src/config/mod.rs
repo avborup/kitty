@@ -2,18 +2,28 @@ use std::path::PathBuf;
 
 use kattisrc::Kattisrc;
 
-mod kattisrc;
+use self::{language::Language, parser::parse_config_from_yaml_file};
 
-#[derive(Debug)]
+mod kattisrc;
+mod language;
+mod parser;
+
+#[derive(Debug, Default)]
 pub struct Config {
     pub kattisrc: Option<Kattisrc>,
+    pub default_language: Option<String>,
+    pub languages: Vec<Language>,
 }
 
 impl Config {
     pub fn load() -> crate::Result<Self> {
         let kattisrc = Kattisrc::from_file(Self::kattisrc_path())?;
+        let yml_config = parse_config_from_yaml_file(Self::config_file_path())?;
 
-        let config = Config { kattisrc };
+        let config = Config {
+            kattisrc,
+            ..yml_config
+        };
 
         Ok(config)
     }
@@ -37,5 +47,9 @@ impl Config {
 
     fn kattisrc_path() -> PathBuf {
         Self::dir_path().join(".kattisrc")
+    }
+
+    fn config_file_path() -> PathBuf {
+        Self::dir_path().join("kitty.yml")
     }
 }
