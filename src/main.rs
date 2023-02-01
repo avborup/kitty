@@ -1,7 +1,7 @@
 use colored::Colorize;
 use kitty::cli;
 
-fn main() -> color_eyre::eyre::Result<()> {
+fn main() -> kitty::Result<()> {
     color_eyre::install()?;
 
     let args = cli::parse_args();
@@ -14,7 +14,7 @@ fn main() -> color_eyre::eyre::Result<()> {
     Ok(())
 }
 
-fn exit_if_err(res: eyre::Result<()>, verbose_enabled: bool) {
+fn exit_if_err(res: kitty::Result<()>, verbose_enabled: bool) {
     if let Err(e) = res {
         if verbose_enabled {
             eprintln!("{}: {e:?}", "Error".bright_red());
