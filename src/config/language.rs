@@ -23,6 +23,10 @@ impl Language {
             compile_cmd,
         }
     }
+
+    pub fn file_ext(&self) -> &str {
+        &self.file_ext
+    }
 }
 
 impl fmt::Display for Language {
