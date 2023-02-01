@@ -5,4 +5,7 @@ authors = ["Adrian Borup <adrian@borup.com>"]
 edition = "2021"
 
 [dependencies]
-
+clap = { version = "4", features = ["derive"] }
+color-eyre = "0.6"
+colored = "2"
+eyre = "0.6"
