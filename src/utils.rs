@@ -18,7 +18,7 @@ pub fn path_to_str(path: &Path) -> String {
 /// Prompts the user in the terminal with a yes/no question. Returns `true` when
 /// the user responds "y", `false` otherwise.
 pub fn prompt_bool(question: &str) -> bool {
-    print!("{} (y/n): ", question);
+    print!("{question} (y/n): ");
     io::stdout().flush().expect("failed to flush stdout");
 
     let mut input = String::new();

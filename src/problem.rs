@@ -56,7 +56,7 @@ impl<'a> Problem<'a> {
                 lang: l,
             }),
             None => Err(match lang_arg {
-                Some(l) => format!("kitty doesn't know how to handle {} files", l),
+                Some(l) => format!("kitty doesn't know how to handle {l} files"),
                 None => {
                     "kitty doesn't know the file extension of the given source file".to_string()
                 }

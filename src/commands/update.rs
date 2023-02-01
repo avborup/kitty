@@ -25,7 +25,7 @@ pub async fn update(_cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
             cur_version,
             v,
         ),
-        Status::UpToDate(v) => println!("kitty is already up to date: v{}", v),
+        Status::UpToDate(v) => println!("kitty is already up to date: v{v}"),
     }
 
     Ok(())

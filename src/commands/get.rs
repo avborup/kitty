@@ -37,11 +37,10 @@ pub async fn get_and_create_problem(
     let p_status = p_res.status();
     if !p_status.is_success() {
         match p_status.as_str() {
-            "404" => return Err(format!("the problem \"{}\" does not exist", id).into()),
+            "404" => return Err(format!("the problem \"{id}\" does not exist").into()),
             _ => {
                 return Err(format!(
-                    "failed to fetch problem \"{}\" (http status code {})",
-                    id, p_status
+                    "failed to fetch problem \"{id}\" (http status code {p_status})"
                 )
                 .into())
             }
@@ -65,7 +64,7 @@ pub async fn get_and_create_problem(
     let lang = if let Some(l) = lang_arg {
         match cfg.lang_from_file_ext(l) {
             Some(v) => Some(v),
-            None => return Err(format!("could not find a language to use for .{} files", l).into()),
+            None => return Err(format!("could not find a language to use for .{l} files").into()),
         }
     } else {
         cfg.default_language()
@@ -82,7 +81,7 @@ pub async fn get_and_create_problem(
 
 pub fn create_problem_url(id: &str) -> Result<String, StdErr> {
     let host_name = cfg.kattisrc()?.get_host_name()?;
-    Ok(format!("https://{}/problems/{}", host_name, id))
+    Ok(format!("https://{host_name}/problems/{id}"))
 }
 
 pub async fn fetch_tests(parent_dir: &Path, problem_url: &str) -> Result<(), StdErr> {
@@ -92,14 +91,14 @@ pub async fn fetch_tests(parent_dir: &Path, problem_url: &str) -> Result<(), Std
         return Err("failed to create test directory at this location".into());
     }
 
-    let zip_url = format!("{}/file/statement/samples.zip", problem_url);
+    let zip_url = format!("{problem_url}/file/statement/samples.zip");
     let z_res = reqwest::get(&zip_url).await?;
 
     let z_status = z_res.status();
     if !z_status.is_success() {
         return match z_status.as_str() {
             "404" => Ok(()),
-            _ => Err(format!("failed to fetch tests (http status code {})", z_status).into()),
+            _ => Err(format!("failed to fetch tests (http status code {z_status})").into()),
         };
     }
 
@@ -180,9 +179,9 @@ pub fn init_file(problem_id: &str, lang: &Language, cmd: &ArgMatches<'_>) -> Res
     let cwd = env::current_dir()?;
     let p_dir = cwd.join(problem_id);
     let problem_file_name = format!("{}.{}", filename, lang.file_ext());
-    let problem_file = p_dir.join(&problem_file_name);
+    let problem_file = p_dir.join(problem_file_name);
     if fs::write(problem_file, template).is_err() {
-        return Err(format!("failed to create template file {}", template_file_name).into());
+        return Err(format!("failed to create template file {template_file_name}").into());
     }
 
     Ok(())

@@ -34,7 +34,7 @@ impl KattisClient {
                 }
                 _ => {
                     return Err(
-                        format!("failed to log in to kattis (http status code {})", status).into(),
+                        format!("failed to log in to kattis (http status code {status})").into(),
                     )
                 }
             }

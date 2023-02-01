@@ -136,8 +136,7 @@ mod config_parser {
     fn get_value_else_err(key: &str, doc: &Yaml) -> Result<String, StdErr> {
         get_string_value(key, doc).ok_or_else(|| {
             format!(
-                "languages in the config file must contain a '{}' field",
-                key,
+                "languages in the config file must contain a '{key}' field",
             )
             .into()
         })

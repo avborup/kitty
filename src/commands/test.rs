@@ -38,7 +38,7 @@ pub async fn test(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     };
 
     if cmd.is_present("watch") {
-        watch(&problem, &test_runner)?;
+        watch(&problem, test_runner)?;
     } else {
         test_runner()?;
     }
@@ -69,7 +69,7 @@ fn run_tests(
 
         let child = match command.spawn() {
             Ok(c) => c,
-            Err(_) => return Err(format!("failed to execute command \"{}\"", compile_prog).into()),
+            Err(_) => return Err(format!("failed to execute command \"{compile_prog}\"").into()),
         };
 
         let output = match child.wait_with_output() {
@@ -103,7 +103,7 @@ fn run_tests(
         // that the file was skipped if it did not have a valid name
         let test_label = test_in.file_stem().unwrap().to_str().unwrap().to_string();
 
-        print!("test {} ... ", test_label);
+        print!("test {test_label} ... ");
 
         let mut f_in = File::open(test_in)?;
         let mut in_buf = Vec::new();
@@ -121,7 +121,7 @@ fn run_tests(
 
         let mut child = match command.spawn() {
             Ok(c) => c,
-            Err(_) => return Err(format!("failed to execute command \"{}\"", run_prog).into()),
+            Err(_) => return Err(format!("failed to execute command \"{run_prog}\"").into()),
         };
 
         {
@@ -195,8 +195,7 @@ fn run_tests(
     };
     let num_passed = tests.len() - fails;
     println!(
-        "\ntest result: {}. {} passed; {} failed.",
-        test_result, num_passed, fails
+        "\ntest result: {test_result}. {num_passed} passed; {fails} failed."
     );
 
     Ok(())

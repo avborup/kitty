@@ -105,7 +105,7 @@ async fn submit_problem<'a>(
 
     let status = res.status();
     if !status.is_success() {
-        return Err(format!("failed to submit to kattis (http status code {})", status).into());
+        return Err(format!("failed to submit to kattis (http status code {status})").into());
     }
 
     let content = match res.text().await {
@@ -153,8 +153,7 @@ async fn show_submission_status(
         let status = res.status();
         if !status.is_success() {
             return Err(format!(
-                "failed to fetch submission progress (http status code {})",
-                status
+                "failed to fetch submission progress (http status code {status})"
             )
             .into());
         }
@@ -243,7 +242,7 @@ async fn show_submission_status(
                 TestCase::Unfinished => continue,
             };
 
-            print!("{}", symbol);
+            print!("{symbol}");
         }
         io::stdout().flush().expect("failed to flush stdout");
 
@@ -272,8 +271,7 @@ async fn show_submission_status(
     runtime_str.retain(|c| !c.is_whitespace());
 
     println!(
-        "\n\nsubmission result: {}. {} passed; {} failed. {}.{}",
-        result_str, num_passed, num_failed, runtime_str, suffix
+        "\n\nsubmission result: {result_str}. {num_passed} passed; {num_failed} failed. {runtime_str}.{suffix}"
     );
 
     Ok(())

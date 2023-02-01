@@ -74,7 +74,7 @@ async fn get_front_page_problems(cmd: &ArgMatches<'_>) -> Result<Vec<SimpleProbl
         sort_by,
         cmd.value_of("direction").unwrap()
     );
-    let url = format!("https://{}/problems?{}", host_name, query);
+    let url = format!("https://{host_name}/problems?{query}");
 
     kc.login(creds, login_url).await?;
     let res = kc.client.get(&url).send().await?;
@@ -82,8 +82,7 @@ async fn get_front_page_problems(cmd: &ArgMatches<'_>) -> Result<Vec<SimpleProbl
     let status = res.status();
     if !status.is_success() {
         return Err(format!(
-            "failed to get problems from kattis (http status code {})",
-            status
+            "failed to get problems from kattis (http status code {status})"
         )
         .into());
     }

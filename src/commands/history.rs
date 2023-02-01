@@ -49,8 +49,7 @@ async fn get_history(kc: &KattisClient) -> Result<Vec<Submission>, StdErr> {
     let status = res.status();
     if !status.is_success() {
         return Err(format!(
-            "failed to retrieve history from kattis (http status code {})",
-            status
+            "failed to retrieve history from kattis (http status code {status})"
         )
         .into());
     }
