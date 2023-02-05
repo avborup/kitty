@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 
 pub fn parse_args() -> KittyArgs {
     KittyArgs::parse()
@@ -24,4 +24,23 @@ pub enum KittySubcommand {
     /// example --lang when running tests), provide its extension exactly as
     /// shown in the output of this command.
     Langs,
+
+    /// A utility to help you configure kitty
+    Config(ConfigArgs),
+}
+
+#[derive(Args, Debug)]
+pub struct ConfigArgs {
+    #[command(subcommand)]
+    pub subcommand: ConfigSubcommand,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum ConfigSubcommand {
+    /// Creates the kitty config directory for you in the correct location and
+    /// shows where it is.
+    Init,
+
+    /// Shows where the kitty config directory is or should be located
+    Location,
 }

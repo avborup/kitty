@@ -29,6 +29,7 @@ fn try_run(args: cli::KittyArgs) -> crate::Result<()> {
 
     match &app.args.subcommand {
         Langs => commands::langs(&app),
+        Config(args) => commands::config(&app, args),
     }
 }
 

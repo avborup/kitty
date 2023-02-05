@@ -45,11 +45,15 @@ impl Config {
             .config_dir
     }
 
-    fn kattisrc_path() -> PathBuf {
+    pub fn kattisrc_path() -> PathBuf {
         Self::dir_path().join(".kattisrc")
     }
 
-    fn config_file_path() -> PathBuf {
+    pub fn config_file_path() -> PathBuf {
         Self::dir_path().join("kitty.yml")
+    }
+
+    pub fn templates_dir_path() -> PathBuf {
+        Self::dir_path().join("templates")
     }
 }
