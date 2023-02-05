@@ -1,6 +1,6 @@
 use std::fs;
 
-use color_eyre::owo_colors::OwoColorize;
+use colored::Colorize;
 use eyre::Context;
 
 use crate::{
@@ -28,7 +28,7 @@ fn init_config_files(_app: &App) -> crate::Result<()> {
             Initialised config directory at {}.
             You should place your .kattisrc and kitty.yml here."
         },
-        Config::dir_path().display().underline()
+        Config::dir_path().display().to_string().underline()
     );
 
     Ok(())
@@ -48,7 +48,7 @@ fn show_config_location(_app: &App) -> crate::Result<()> {
              - Your kitty.yml file:   {}
              - Your templates folder: {}
         "},
-        config_dir.display().underline(),
+        config_dir.display().to_string().underline(),
         Config::kattisrc_path().display(),
         Config::config_file_path().display(),
         Config::templates_dir_path().display()
