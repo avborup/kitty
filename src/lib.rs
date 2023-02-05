@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 pub mod cli;
 mod commands;
 mod config;
@@ -10,7 +12,15 @@ pub struct App {
     config: config::Config,
 }
 
-pub fn run(args: cli::KittyArgs) -> crate::Result<()> {
+pub fn run(args: cli::KittyArgs) {
+    let verbose_enabled = args.verbose;
+
+    let result = try_run(args);
+
+    exit_if_err(result, verbose_enabled);
+}
+
+fn try_run(args: cli::KittyArgs) -> crate::Result<()> {
     use cli::KittySubcommand::*;
 
     let config = config::Config::load()?;
@@ -19,5 +29,19 @@ pub fn run(args: cli::KittyArgs) -> crate::Result<()> {
 
     match &app.args.subcommand {
         Langs => commands::langs(&app),
+    }
+}
+
+fn exit_if_err(res: crate::Result<()>, verbose_enabled: bool) {
+    if let Err(e) = res {
+        if verbose_enabled {
+            eprintln!("{}: {e:?}", "Error".bright_red());
+        } else {
+            eprintln!("{}: {e}", "Error".bright_red());
+            eprintln!();
+            eprintln!("Run with --verbose for more information");
+        }
+
+        std::process::exit(1);
     }
 }

@@ -1,29 +1,10 @@
-use colored::Colorize;
-use kitty::cli;
+use kitty::cli::parse_args;
 
 fn main() -> kitty::Result<()> {
     color_eyre::install()?;
 
-    let args = cli::parse_args();
-    let verbose_enabled = args.verbose;
-
-    let result = kitty::run(args);
-
-    exit_if_err(result, verbose_enabled);
+    let args = parse_args();
+    kitty::run(args);
 
     Ok(())
-}
-
-fn exit_if_err(res: kitty::Result<()>, verbose_enabled: bool) {
-    if let Err(e) = res {
-        if verbose_enabled {
-            eprintln!("{}: {e:?}", "Error".bright_red());
-        } else {
-            eprintln!("{}: {e}", "Error".bright_red());
-            eprintln!();
-            eprintln!("Run with --verbose for more information");
-        }
-
-        std::process::exit(1);
-    }
 }
