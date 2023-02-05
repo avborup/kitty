@@ -9,7 +9,10 @@ pub fn assert_output_eq(actual: impl AsRef<str>, expected: impl AsRef<str>) {
 }
 
 fn normalise_string(s: impl AsRef<str>) -> String {
-    s.as_ref()
+    let s = s.as_ref();
+    let without_ansi_escapes = String::from_utf8(strip_ansi_escapes::strip(s).unwrap()).unwrap();
+
+    without_ansi_escapes
         .trim()
         .lines()
         .map(str::trim)
