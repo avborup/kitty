@@ -28,3 +28,18 @@ fn langs_shows_all_languages() {
         .boxed()
     }));
 }
+
+#[test]
+fn langs_shows_helpful_when_no_config_is_set() {
+    run_with_sandbox(Box::new(|env| {
+        async move {
+            let output = env.exec("kitty langs").await;
+
+            assert_output_eq(
+                output.stdout,
+                "No languages found. Have you set up your kitty.yml config file?",
+            );
+        }
+        .boxed()
+    }));
+}
