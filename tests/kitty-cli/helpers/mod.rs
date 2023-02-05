@@ -1,5 +1,8 @@
+use std::env;
+
 use bollard::Docker;
 use dockertest::{Composition, DockerTest};
+use dotenv::dotenv;
 use futures_util::future::BoxFuture;
 
 pub use environment::Environment;
@@ -30,6 +33,31 @@ pub fn run_with_sandbox(to_run: Box<dyn Fn(Environment) -> BoxFuture<'_, ()> + S
 }
 
 pub async fn make_standard_setup(env: &Environment<'_>) {
+    // Must call .ok(), not unwrap, since an error is returned if no .env exists
+    dotenv().ok();
+
     env.exec("mkdir -p /root/.config/kitty").await;
     env.add_file("./kitty.yml", "/root/.config/kitty/kitty.yml");
+
+    if let Ok(token) = env::var("KATTIS_TEST_TOKEN") {
+        let kattisrc = format!(
+            indoc::indoc! {"
+                [user]
+                username: kitty-tester
+                token: {}
+
+                [kattis]
+                hostname: open.kattis.com
+                loginurl: https://open.kattis.com/login
+                submissionurl: https://open.kattis.com/submit
+                submissionsurl: https://open.kattis.com/submissions
+            "},
+            token
+        );
+
+        env.exec(&format!(
+            "echo '{kattisrc}' > /root/.config/kitty/.kattisrc"
+        ))
+        .await;
+    }
 }
