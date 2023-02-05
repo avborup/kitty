@@ -12,15 +12,15 @@ pub struct App {
     config: config::Config,
 }
 
-pub fn run(args: cli::KittyArgs) {
+pub async fn run(args: cli::KittyArgs) {
     let verbose_enabled = args.verbose;
 
-    let result = try_run(args);
+    let result = try_run(args).await;
 
     exit_if_err(result, verbose_enabled);
 }
 
-fn try_run(args: cli::KittyArgs) -> crate::Result<()> {
+async fn try_run(args: cli::KittyArgs) -> crate::Result<()> {
     use cli::KittySubcommand::*;
 
     let config = config::Config::load()?;
@@ -28,8 +28,8 @@ fn try_run(args: cli::KittyArgs) -> crate::Result<()> {
     let app = App { args, config };
 
     match &app.args.subcommand {
-        Langs => commands::langs(&app),
-        Config(args) => commands::config(&app, args),
+        Langs => commands::langs(&app).await,
+        Config(args) => commands::config(&app, args).await,
     }
 }
 

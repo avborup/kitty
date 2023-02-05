@@ -2,7 +2,7 @@ use color_eyre::owo_colors::OwoColorize;
 
 use crate::App;
 
-pub fn langs(app: &App) -> crate::Result<()> {
+pub async fn langs(app: &App) -> crate::Result<()> {
     if app.config.languages.is_empty() {
         println!("No languages found. Have you set up your kitty.yml config file?");
         return Ok(());

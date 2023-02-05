@@ -9,7 +9,7 @@ use crate::{
     App,
 };
 
-pub fn config(app: &App, config_args: &ConfigArgs) -> crate::Result<()> {
+pub async fn config(app: &App, config_args: &ConfigArgs) -> crate::Result<()> {
     match &config_args.subcommand {
         ConfigSubcommand::Init => {
             init_config_files(app).wrap_err("Failed to initialise config files")
