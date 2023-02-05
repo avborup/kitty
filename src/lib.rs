@@ -1,4 +1,4 @@
-use colored::Colorize;
+use color_eyre::owo_colors::OwoColorize;
 
 pub mod cli;
 mod commands;

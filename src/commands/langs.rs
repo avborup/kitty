@@ -1,4 +1,4 @@
-use colored::Colorize;
+use color_eyre::owo_colors::OwoColorize;
 
 use crate::App;
 
