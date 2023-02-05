@@ -13,3 +13,9 @@ platform-dirs = "0.3"
 rust-ini = "0.18"
 secrecy = "0.8"
 yaml-rust = "0.4"
+
+[dev-dependencies]
+dockertest = "0.3"
+bollard = "0.13"
+futures-util = "0.3.26"
+indoc = "2.0.0"
