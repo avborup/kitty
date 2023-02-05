@@ -18,8 +18,8 @@ pub struct Credentials {
 
 #[derive(Debug)]
 pub struct KattisSettings {
-    pub hostname: String,
-    pub loginurl: String,
+    pub host_name: String,
+    pub login_url: String,
     pub submission_url: String,
     pub submissions_url: String,
 }
@@ -58,8 +58,8 @@ impl Kattisrc {
         };
 
         let kattis = KattisSettings {
-            hostname: get_field(ini, "kattis", "hostname")?,
-            loginurl: get_field(ini, "kattis", "loginurl")?,
+            host_name: get_field(ini, "kattis", "hostname")?,
+            login_url: get_field(ini, "kattis", "loginurl")?,
             submission_url: get_field(ini, "kattis", "submissionurl")?,
             submissions_url: get_field(ini, "kattis", "submissionsurl")?,
         };
