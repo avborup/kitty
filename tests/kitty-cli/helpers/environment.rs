@@ -16,7 +16,7 @@ pub struct Environment<'a> {
 }
 
 impl<'a> Environment<'a> {
-    pub async fn exec(&self, cmd: &str) -> Output {
+    pub async fn run(&self, cmd: &str) -> Output {
         let exec = self
             .docker
             .create_exec(
@@ -52,7 +52,11 @@ impl<'a> Environment<'a> {
             unreachable!();
         }
 
-        Output { stdout, stderr }
+        let output = Output { stdout, stderr };
+
+        dbg!((cmd, &output));
+
+        output
     }
 
     pub fn add_file(

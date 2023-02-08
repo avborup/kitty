@@ -6,7 +6,7 @@ use dotenv::dotenv;
 use futures_util::future::BoxFuture;
 
 pub use environment::Environment;
-pub use output::{assert_output_eq, Output};
+pub use output::*;
 
 mod environment;
 mod output;
@@ -36,7 +36,7 @@ pub async fn make_standard_setup(env: &Environment<'_>) {
     // Must call .ok(), not unwrap, since an error is returned if no .env exists
     dotenv().ok();
 
-    env.exec("mkdir -p /root/.config/kitty").await;
+    env.run("mkdir -p /root/.config/kitty").await;
     env.add_file("./kitty.yml", "/root/.config/kitty/kitty.yml");
 
     if let Ok(token) = env::var("KATTIS_TEST_TOKEN") {
@@ -55,9 +55,17 @@ pub async fn make_standard_setup(env: &Environment<'_>) {
             token
         );
 
-        env.exec(&format!(
+        env.run(&format!(
             "echo '{kattisrc}' > /root/.config/kitty/.kattisrc"
         ))
         .await;
     }
+}
+
+pub async fn add_template(env: &Environment<'_>, template_file: &str, template_contents: &str) {
+    env.run("mkdir -p /root/.config/kitty/templates").await;
+    env.run(&format!(
+        "echo '{template_contents}' > /root/.config/kitty/templates/{template_file}"
+    ))
+    .await;
 }

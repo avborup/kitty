@@ -1,22 +1,22 @@
 use futures_util::FutureExt;
 
-use crate::helpers::{assert_output_eq, run_with_sandbox};
+use crate::helpers::{
+    contains, equals, run_with_sandbox, OutputAssertion::Empty, OutputSource::StdOut,
+};
 
 #[test]
-fn init_creates_folders() {
+fn creates_folders() {
     run_with_sandbox(Box::new(|env| {
         async move {
-            assert_output_eq(env.exec("ls /root/.config").await.stdout, "");
+            env.run("ls /root/.config").await.assert(StdOut, Empty);
 
-            let output = env.exec("kitty config init").await;
+            env.run("kitty config init")
+                .await
+                .assert(StdOut, contains("Initialised config directory"));
 
-            assert!(
-                output.stdout.contains("Initialised config directory"),
-                "Stdout did not contain success text: {:#?}",
-                output
-            );
-
-            assert_output_eq(env.exec("ls /root/.config").await.stdout, "kitty");
+            env.run("ls /root/.config")
+                .await
+                .assert(StdOut, equals("kitty"));
         }
         .boxed()
     }));

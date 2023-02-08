@@ -1,15 +1,13 @@
 use futures_util::FutureExt;
 use indoc::indoc;
 
-use crate::helpers::{assert_output_eq, make_standard_setup, run_with_sandbox};
+use crate::helpers::{equals, make_standard_setup, run_with_sandbox, OutputSource::StdOut};
 
 #[test]
-fn langs_shows_all_languages() {
+fn shows_all_languages() {
     run_with_sandbox(Box::new(|env| {
         async move {
             make_standard_setup(&env).await;
-
-            let output = env.exec("kitty langs").await;
 
             let expected = indoc! {"
                 Name       Extension
@@ -23,21 +21,21 @@ fn langs_shows_all_languages() {
                 Rust       rs
             "};
 
-            assert_output_eq(output.stdout, expected);
+            env.run("kitty langs")
+                .await
+                .assert(StdOut, equals(expected));
         }
         .boxed()
     }));
 }
 
 #[test]
-fn langs_shows_helpful_when_no_config_is_set() {
+fn shows_helpful_when_no_config_is_set() {
     run_with_sandbox(Box::new(|env| {
         async move {
-            let output = env.exec("kitty langs").await;
-
-            assert_output_eq(
-                output.stdout,
-                "No languages found. Have you set up your kitty.yml config file?",
+            env.run("kitty langs").await.assert(
+                StdOut,
+                equals("No languages found. Have you set up your kitty.yml config file?"),
             );
         }
         .boxed()
