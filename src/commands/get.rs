@@ -80,7 +80,7 @@ async fn fetch_tests(
     solution_dir: impl AsRef<Path>,
     problem_id: &str,
 ) -> crate::Result<()> {
-    let test_dir = solution_dir.as_ref().join("tests");
+    let test_dir = solution_dir.as_ref().join("test");
 
     fs::create_dir(&test_dir).wrap_err("Failed to create test files directory")?;
 

@@ -20,7 +20,7 @@ fn creates_folders_and_downloads_tests() {
 
             env.run("ls").await.assert(StdOut, contains("quadrant"));
 
-            let test_files_output = env.run("ls quadrant/tests").await;
+            let test_files_output = env.run("ls quadrant/test").await;
 
             ["1.in", "1.ans", "2.in", "2.ans"]
                 .into_iter()
@@ -28,10 +28,10 @@ fn creates_folders_and_downloads_tests() {
                     test_files_output.assert(StdOut, contains(s));
                 });
 
-            env.run("cat quadrant/tests/2.in")
+            env.run("cat quadrant/test/2.in")
                 .await
                 .assert(StdOut, equals("9\n-13"));
-            env.run("cat quadrant/tests/2.ans")
+            env.run("cat quadrant/test/2.ans")
                 .await
                 .assert(StdOut, equals("4"));
         }
