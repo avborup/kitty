@@ -1,5 +1,7 @@
 FROM rust:1.67-slim
 
+RUN apt update && apt install -y libssl-dev pkg-config
+
 WORKDIR /
 # Create blank project
 RUN USER=root cargo new app

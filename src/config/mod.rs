@@ -5,7 +5,7 @@ use kattisrc::Kattisrc;
 use self::{language::Language, parser::parse_config_from_yaml_file};
 
 mod kattisrc;
-mod language;
+pub mod language;
 mod parser;
 
 #[derive(Debug, Default)]
@@ -55,5 +55,15 @@ impl Config {
 
     pub fn templates_dir_path() -> PathBuf {
         Self::dir_path().join("templates")
+    }
+
+    pub fn lang_from_file_ext(&self, file_ext: &str) -> Option<&Language> {
+        self.languages.iter().find(|l| l.file_ext() == file_ext)
+    }
+
+    pub fn default_language(&self) -> Option<&Language> {
+        self.default_language
+            .as_ref()
+            .and_then(|l| self.lang_from_file_ext(l))
     }
 }

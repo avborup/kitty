@@ -3,6 +3,7 @@ use colored::Colorize;
 pub mod cli;
 mod commands;
 mod config;
+mod problem;
 
 pub type Result<T> = eyre::Result<T>;
 
@@ -30,6 +31,7 @@ async fn try_run(args: cli::KittyArgs) -> crate::Result<()> {
     match &app.args.subcommand {
         Langs => commands::langs(&app).await,
         Config(args) => commands::config(&app, args).await,
+        Get(args) => commands::get(&app, args).await,
     }
 }
 
