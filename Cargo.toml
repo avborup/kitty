@@ -21,6 +21,7 @@ tempfile = "3"
 zip = "0.6"
 shlex = "1.1"
 notify = "5.1"
+webbrowser = "0.8"
 
 [dev-dependencies]
 dockertest = "0.3"

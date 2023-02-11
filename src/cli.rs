@@ -31,6 +31,8 @@ pub enum KittySubcommand {
     /// shown in the output of this command.
     Langs,
 
+    Open(OpenArgs),
+
     Test(TestArgs),
 }
 
@@ -142,4 +144,12 @@ pub struct TestArgs {
     /// Re-runs tests every time the source file changes.
     #[arg(short, long, default_value_t = false)]
     pub watch: bool,
+}
+
+/// Opens a problem in the browser
+#[derive(Args, Debug)]
+pub struct OpenArgs {
+    /// The ID of the problem as seen in its URL. Defaults to the name of the
+    /// current directory.
+    pub problem_id: Option<String>,
 }
