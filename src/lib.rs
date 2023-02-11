@@ -4,6 +4,8 @@ pub mod cli;
 mod commands;
 mod config;
 mod problem;
+mod solution;
+mod utils;
 
 pub type Result<T> = eyre::Result<T>;
 
@@ -32,6 +34,7 @@ async fn try_run(args: cli::KittyArgs) -> crate::Result<()> {
         Langs => commands::langs(&app).await,
         Config(args) => commands::config(&app, args).await,
         Get(args) => commands::get(&app, args).await,
+        Test(args) => commands::test(&app, args).await,
     }
 }
 

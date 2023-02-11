@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::{Args, Parser, Subcommand};
 
 pub fn parse_args() -> KittyArgs {
@@ -28,6 +30,8 @@ pub enum KittySubcommand {
     /// example --lang when running tests), provide its extension exactly as
     /// shown in the output of this command.
     Langs,
+
+    Test(TestArgs),
 }
 
 /// A utility to help you configure kitty
@@ -89,4 +93,53 @@ pub struct GetArgs {
     /// js for JavaScript, etc.).
     #[arg(short, long)]
     pub lang: Option<String>,
+}
+
+/// Runs a solution through the test cases
+///
+/// Test cases are located in the 'test' folder within your solution folder.
+/// Initially, tests are simply the official test cases from Kattis, but you can
+/// add as many test files as you want.
+///
+/// For each .in (input) file, the file's content is piped into your solution,
+/// and your solution's output is compared to the corresponding .ans (answer)
+/// file.
+///
+/// If your solution exits with a non-zero code, it is considered a runtime
+/// error.
+#[derive(Args, Debug)]
+pub struct TestArgs {
+    /// The path to the solution folder you want to test
+    #[arg(default_value = ".")]
+    pub path: PathBuf,
+
+    /// Path to the solution file to test.
+    ///
+    /// Useful when there are multiple valid files in the solution folder, if
+    /// the file doesn't match one of your defined languages, or if the file is
+    /// located somewhere else.
+    #[arg(short, long)]
+    pub file: Option<PathBuf>,
+
+    /// Programming language to use for the solution.
+    ///
+    /// Useful when the file has another file extension than the one you defined
+    /// for the language.
+    ///
+    /// Write the file extension for the language (java for Java, py for python,
+    /// js for JavaScript, etc.).
+    #[arg(short, long)]
+    pub lang: Option<String>,
+
+    /// If the test folder does not exist, download the test files from Kattis
+    #[arg(long, default_value_t = false)]
+    pub fetch: bool,
+
+    /// Display how long each test case takes to execute.
+    #[arg(short, long, default_value_t = false)]
+    pub time: bool,
+
+    /// Re-runs tests every time the source file changes.
+    #[arg(short, long, default_value_t = false)]
+    pub watch: bool,
 }

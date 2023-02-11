@@ -1,6 +1,11 @@
-use std::path::PathBuf;
+use std::{
+    env::consts::EXE_EXTENSION,
+    path::{Path, PathBuf},
+};
 
 use kattisrc::Kattisrc;
+
+use crate::utils::get_full_path;
 
 use self::{language::Language, parser::parse_config_from_yaml_file};
 
@@ -58,7 +63,19 @@ impl Config {
     }
 
     pub fn lang_from_file_ext(&self, file_ext: &str) -> Option<&Language> {
-        self.languages.iter().find(|l| l.file_ext() == file_ext)
+        self.languages
+            .iter()
+            .find(|l| l.file_ext().to_lowercase() == file_ext.to_lowercase())
+    }
+
+    pub fn lang_from_file(&self, file: impl AsRef<Path>) -> crate::Result<Option<&Language>> {
+        let ext = file
+            .as_ref()
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .ok_or_else(|| eyre::eyre!("File has no extension"))?;
+
+        Ok(self.lang_from_file_ext(ext))
     }
 
     pub fn default_language(&self) -> Option<&Language> {
@@ -66,4 +83,38 @@ impl Config {
             .as_ref()
             .and_then(|l| self.lang_from_file_ext(l))
     }
+}
+
+pub fn prepare_cmd(cmd: &str, file_path: impl AsRef<Path>) -> crate::Result<Vec<String>> {
+    fn path_to_str(path: impl AsRef<Path>) -> crate::Result<String> {
+        path.as_ref()
+            .to_str()
+            .map(str::to_string)
+            .ok_or_else(|| eyre::eyre!("Could not convert path to string"))
+    }
+
+    let file_path = get_full_path(file_path)?;
+
+    let dir_path = file_path
+        .parent()
+        .ok_or_else(|| eyre::eyre!("Could not find parent of path '{}'", file_path.display()))?;
+
+    let exe_path = file_path.with_extension(EXE_EXTENSION);
+    let file_name_no_ext = file_path.file_stem().unwrap().to_str().unwrap();
+
+    let parts = shlex::split(cmd)
+        .ok_or_else(|| eyre::eyre!("Could not parse command"))?
+        .iter()
+        .map(|arg| {
+            let populated = arg
+                .replace("$SRC_PATH", &path_to_str(&file_path)?)
+                .replace("$SRC_FILE_NAME_NO_EXT", file_name_no_ext)
+                .replace("$DIR_PATH", &path_to_str(&dir_path)?)
+                .replace("$EXE_PATH", &path_to_str(&exe_path)?);
+
+            Ok(populated)
+        })
+        .collect::<crate::Result<_>>();
+
+    parts
 }

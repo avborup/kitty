@@ -1,6 +1,7 @@
 FROM rust:1.67-slim
 
 RUN apt update && apt install -y libssl-dev pkg-config
+RUN apt install -y python3 python-is-python3
 
 WORKDIR /
 # Create blank project

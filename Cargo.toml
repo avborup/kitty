@@ -19,6 +19,8 @@ regex = "1.7"
 colored = "2.0"
 tempfile = "3"
 zip = "0.6"
+shlex = "1.1"
+notify = "5.1"
 
 [dev-dependencies]
 dockertest = "0.3"

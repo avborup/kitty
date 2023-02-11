@@ -42,7 +42,7 @@ fn assert_output_contains(actual: impl AsRef<str>, expected_substring: impl AsRe
 
     assert!(
         a.contains(&b),
-        "Expected output to contain {b:?} but got {a:?}",
+        "Expected `actual` to contain `expected`:\n  actual:   {a:?}\n  expected: {b:?}",
     );
 }
 

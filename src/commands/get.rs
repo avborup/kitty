@@ -13,6 +13,7 @@ use crate::{
     cli::GetArgs,
     config::{language::Language, Config},
     problem::{make_problem_sample_tests_zip_url, make_problem_url, problem_id_is_legal},
+    solution::get_test_dir,
     App,
 };
 
@@ -75,12 +76,12 @@ fn create_solution_dir(problem_id: &str) -> crate::Result<PathBuf> {
     Ok(solution_dir)
 }
 
-async fn fetch_tests(
+pub async fn fetch_tests(
     app: &App,
     solution_dir: impl AsRef<Path>,
     problem_id: &str,
 ) -> crate::Result<()> {
-    let test_dir = solution_dir.as_ref().join("test");
+    let test_dir = get_test_dir(solution_dir);
 
     fs::create_dir(&test_dir).wrap_err("Failed to create test files directory")?;
 

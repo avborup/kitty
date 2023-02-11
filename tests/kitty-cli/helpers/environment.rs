@@ -59,11 +59,7 @@ impl<'a> Environment<'a> {
         output
     }
 
-    pub fn add_file(
-        &self,
-        local_file: impl AsRef<Path>,
-        destination_in_container: impl AsRef<Path>,
-    ) {
+    pub fn copy(&self, local_file: impl AsRef<Path>, destination_in_container: impl AsRef<Path>) {
         let local_file_path = local_file.as_ref().to_string_lossy();
         let dest_file_path = destination_in_container.as_ref().to_string_lossy();
         let container_name = self.container.name();
