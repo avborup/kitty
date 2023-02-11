@@ -54,6 +54,7 @@ impl<'a> Environment<'a> {
 
         let output = Output { stdout, stderr };
 
+        // Having this here is useful to quickly see why tests are failing
         dbg!((cmd, &output));
 
         output
