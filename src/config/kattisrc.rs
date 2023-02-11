@@ -32,7 +32,7 @@ impl Kattisrc {
             return Ok(None);
         }
 
-        let ini = Ini::load_from_file(&path)
+        let ini = Ini::load_from_file(path)
             .with_context(|| format!("failed to read .kattisrc at '{}'", path.display()))?;
 
         let kattisrc = Self::from_ini(&ini)?;

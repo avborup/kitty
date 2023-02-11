@@ -127,7 +127,7 @@ fn populate_template(
 ) -> crate::Result<()> {
     let lang =
         match &args.lang {
-            Some(lang) => Some(app.config.lang_from_file_ext(&lang).ok_or_else(|| {
+            Some(lang) => Some(app.config.lang_from_file_ext(lang).ok_or_else(|| {
                 eyre::eyre!("Could not find a language to use for .{} files", lang)
             })?),
             None => app.config.default_language(),

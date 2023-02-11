@@ -19,7 +19,7 @@ pub async fn langs(app: &App) -> crate::Result<()> {
 
     println!("{:9}  {}", "Name".bright_cyan(), "Extension".bright_cyan());
     for (name, ext) in langs {
-        println!("{:9}  {}", name, ext);
+        println!("{name:9}  {ext}");
     }
 
     Ok(())

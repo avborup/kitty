@@ -32,7 +32,7 @@ pub fn resolve_and_get_file_name(path: impl AsRef<Path>) -> crate::Result<String
 /// Prompts the user in the terminal with a yes/no question. Returns `true` when
 /// the user responds "y", `false` otherwise.
 pub fn prompt_bool(question: &str) -> crate::Result<bool> {
-    print!("{} (y/n): ", question);
+    print!("{question} (y/n): ");
     io::stdout().flush().wrap_err("failed to flush stdout")?;
 
     let mut input = String::new();

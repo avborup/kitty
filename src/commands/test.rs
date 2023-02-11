@@ -92,16 +92,16 @@ fn run_tests(
             Ok(_) => {}
             Err(TestCaseError::WrongAnswer { expected, actual }) => {
                 println!("{}", "Expected:".underline());
-                println!("{}\n", expected);
+                println!("{expected}\n");
                 println!("{}", "Actual:".underline());
-                println!("{}\n", actual);
+                println!("{actual}\n");
             }
             Err(TestCaseError::RuntimeError { stdout, stderr }) => {
                 println!("{}:", "Runtime error".bright_red());
                 if !stdout.is_empty() {
-                    println!("{}", stdout);
+                    println!("{stdout}");
                 }
-                println!("{}\n", stderr);
+                println!("{stderr}\n");
             }
         }
     }
@@ -198,8 +198,8 @@ fn run_compile_cmd(app: &App, compile_cmd: &[String]) -> crate::Result<()> {
         let stdout = String::from_utf8_lossy(&output.stdout);
 
         eprintln!("{}:", "Compilation error".bright_red());
-        eprintln!("{}", stdout);
-        eprintln!("{}", stderr);
+        eprintln!("{stdout}");
+        eprintln!("{stderr}");
 
         bail!("Failed to compile program ({})", output.status);
     }

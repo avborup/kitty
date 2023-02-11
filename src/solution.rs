@@ -32,7 +32,7 @@ impl<'a> Solution<'a> {
             solution_dir.display().underline()
         );
 
-        let problem_id = resolve_and_get_file_name(&solution_dir)
+        let problem_id = resolve_and_get_file_name(solution_dir)
             .wrap_err("Failed to extract problem ID from the solution folder")?;
 
         let solution_file = resolve_solution_file_to_use(app, solution_dir, &options)?;

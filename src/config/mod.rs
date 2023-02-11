@@ -109,7 +109,7 @@ pub fn prepare_cmd(cmd: &str, file_path: impl AsRef<Path>) -> crate::Result<Vec<
             let populated = arg
                 .replace("$SRC_PATH", &path_to_str(&file_path)?)
                 .replace("$SRC_FILE_NAME_NO_EXT", file_name_no_ext)
-                .replace("$DIR_PATH", &path_to_str(&dir_path)?)
+                .replace("$DIR_PATH", &path_to_str(dir_path)?)
                 .replace("$EXE_PATH", &path_to_str(&exe_path)?);
 
             Ok(populated)

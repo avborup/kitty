@@ -20,7 +20,7 @@ impl<'a> Environment<'a> {
         let exec = self
             .docker
             .create_exec(
-                &self.container.name(),
+                self.container.name(),
                 CreateExecOptions {
                     cmd: Some(vec!["sh", "-c", cmd]),
                     attach_stdout: Some(true),
@@ -45,7 +45,7 @@ impl<'a> Environment<'a> {
                 match msg {
                     LogOutput::StdOut { message } => stdout.push_str(&bytes_to_str(message)),
                     LogOutput::StdErr { message } => stderr.push_str(&bytes_to_str(message)),
-                    other => panic!("Unexpected output from command: {:#?}", other),
+                    other => panic!("Unexpected output from command: {other:#?}"),
                 }
             }
         } else {
