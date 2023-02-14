@@ -39,11 +39,14 @@ pub async fn make_standard_setup(env: &Environment<'_>) {
     env.run("mkdir -p /root/.config/kitty").await;
     env.copy("./kitty.yml", "/root/.config/kitty/kitty.yml");
 
-    if let Ok(token) = env::var("KATTIS_TEST_TOKEN") {
+    let kattis_test_token = env::var("KATTIS_TEST_TOKEN");
+    let kattis_test_user = env::var("KATTIS_TEST_USERNAME");
+
+    if let (Ok(token), Ok(username)) = (kattis_test_token, kattis_test_user) {
         let kattisrc = format!(
             indoc::indoc! {"
                 [user]
-                username: kitty-tester
+                username: {}
                 token: {}
 
                 [kattis]
@@ -52,7 +55,7 @@ pub async fn make_standard_setup(env: &Environment<'_>) {
                 submissionurl: https://open.kattis.com/submit
                 submissionsurl: https://open.kattis.com/submissions
             "},
-            token
+            username, token,
         );
 
         env.run(&format!(
