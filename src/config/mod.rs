@@ -9,7 +9,7 @@ use crate::utils::get_full_path;
 
 use self::{language::Language, parser::parse_config_from_yaml_file};
 
-mod kattisrc;
+pub mod kattisrc;
 pub mod language;
 mod parser;
 

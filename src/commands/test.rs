@@ -14,27 +14,24 @@ use crate::{
     cli::TestArgs,
     config::language::ExecuteProgramCommands,
     solution::{get_test_cases, get_test_dir, Solution, SolutionOptions, TestCase},
-    utils::{get_full_path, prompt_bool},
+    utils::prompt_bool,
     App,
 };
 
-const CHECKBOX: &str = "\u{2705}"; // Green checkbox emoji
-const CROSSMARK: &str = "\u{274C}"; // Red X emoji
+const SUCCESS: &str = "✅";
+const FAILURE: &str = "❌";
 
 pub async fn test(app: &App, args: &TestArgs) -> crate::Result<()> {
-    let solution_dir =
-        get_full_path(&args.path).wrap_err("Failed to make the solution folder path absolute")?;
-
     let solution = Solution::from_folder(
         app,
-        &solution_dir,
+        &args.path,
         SolutionOptions {
             file_path: args.file.as_ref(),
             lang: args.lang.as_ref(),
         },
     )?;
 
-    fetch_tests_if_needed(app, args, &solution.id, &solution_dir).await?;
+    fetch_tests_if_needed(app, args, &solution.id, &solution.dir).await?;
 
     let test_runner = || -> crate::Result<()> {
         let execution_commands = solution
@@ -76,7 +73,7 @@ fn run_tests(
         let outcome = run_test(app, execution_commands.run_cmd(), test_case)?;
         let elapsed_time = start_time.elapsed();
 
-        print!("{}", if outcome.is_ok() { CHECKBOX } else { CROSSMARK });
+        print!("{}", if outcome.is_ok() { SUCCESS } else { FAILURE });
 
         if args.time {
             print!(" in {:.2}s", elapsed_time.as_secs_f64());

@@ -8,7 +8,11 @@ use std::{
 use color_eyre::owo_colors::OwoColorize;
 use eyre::Context;
 
-use crate::{config::language::Language, utils::resolve_and_get_file_name, App};
+use crate::{
+    config::language::Language,
+    utils::{get_full_path, resolve_and_get_file_name},
+    App,
+};
 
 #[derive(Debug)]
 pub struct Solution<'a> {
@@ -24,7 +28,7 @@ impl<'a> Solution<'a> {
         path: impl AsRef<Path>,
         options: SolutionOptions,
     ) -> crate::Result<Self> {
-        let solution_dir = path.as_ref();
+        let solution_dir = get_full_path(path)?;
 
         eyre::ensure!(
             solution_dir.is_dir(),
@@ -32,10 +36,10 @@ impl<'a> Solution<'a> {
             solution_dir.display().underline()
         );
 
-        let problem_id = resolve_and_get_file_name(solution_dir)
+        let problem_id = resolve_and_get_file_name(&solution_dir)
             .wrap_err("Failed to extract problem ID from the solution folder")?;
 
-        let solution_file = resolve_solution_file_to_use(app, solution_dir, &options)?;
+        let solution_file = resolve_solution_file_to_use(app, &solution_dir, &options)?;
 
         let solution_lang = options
             .lang
@@ -47,7 +51,7 @@ impl<'a> Solution<'a> {
 
         Ok(Self {
             id: problem_id,
-            dir: solution_dir.to_path_buf(),
+            dir: solution_dir,
             file: solution_file,
             lang: solution_lang,
         })
@@ -86,7 +90,7 @@ fn resolve_solution_file_to_use(
 
     eyre::ensure!(
         !options.is_empty(),
-        "No solution files found in the solution folder: '{}'",
+        "No solution files found in the solution folder: {}",
         solution_dir.display().underline()
     );
 

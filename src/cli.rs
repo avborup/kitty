@@ -21,8 +21,10 @@ pub struct KittyArgs {
 #[derive(Subcommand, Debug)]
 pub enum KittySubcommand {
     Config(ConfigArgs),
-
     Get(GetArgs),
+    Open(OpenArgs),
+    Submit(SubmitArgs),
+    Test(TestArgs),
 
     /// List all the languages you can use kitty with based on your config file
     ///
@@ -30,10 +32,6 @@ pub enum KittySubcommand {
     /// example --lang when running tests), provide its extension exactly as
     /// shown in the output of this command.
     Langs,
-
-    Open(OpenArgs),
-
-    Test(TestArgs),
 }
 
 /// A utility to help you configure kitty
@@ -152,4 +150,41 @@ pub struct OpenArgs {
     /// The ID of the problem as seen in its URL. Defaults to the name of the
     /// current directory.
     pub problem_id: Option<String>,
+}
+
+/// Submits a solution to Kattis
+#[derive(Args, Debug)]
+pub struct SubmitArgs {
+    /// The path to the solution folder you want to submit.
+    ///
+    /// The name of the folder is used as the problem ID when submitting to
+    /// Kattis.
+    #[arg(default_value = ".")]
+    pub path: PathBuf,
+
+    /// Path to the solution file to submit.
+    ///
+    /// Useful when there are multiple valid files in the solution folder, if
+    /// the file doesn't match one of your defined languages, or if the file is
+    /// located somewhere else.
+    #[arg(short, long)]
+    pub file: Option<PathBuf>,
+
+    /// Programming language to use for the solution.
+    ///
+    /// Useful when the file has another file extension than the one you defined
+    /// for the language.
+    ///
+    /// Write the file extension for the language (java for Java, py for python,
+    /// js for JavaScript, etc.).
+    #[arg(short, long)]
+    pub lang: Option<String>,
+
+    /// Bypass the confirmation prompt by saying yes in advance.
+    #[arg(short, long, default_value_t = false)]
+    pub yes: bool,
+
+    /// Open the submission on Kattis in your browser.
+    #[arg(short, long, default_value_t = false)]
+    pub open: bool,
 }

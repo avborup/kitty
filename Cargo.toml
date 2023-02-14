@@ -22,6 +22,9 @@ zip = "0.6"
 shlex = "1.1"
 notify = "5.1"
 webbrowser = "0.8"
+serde = { version = "1", features = ["derive"] }
+scraper = "0.14"
+selectors = "0.22"
 
 [dev-dependencies]
 dockertest = "0.3"
@@ -29,3 +32,4 @@ bollard = "0.13"
 futures-util = "0.3"
 strip-ansi-escapes = "0.1"
 dotenv = "0.15"
+serial_test = "1.0"

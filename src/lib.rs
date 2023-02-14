@@ -43,6 +43,7 @@ async fn try_run(args: cli::KittyArgs) -> crate::Result<()> {
         Langs => commands::langs(&app).await,
         Open(args) => commands::open(&app, args).await,
         Test(args) => commands::test(&app, args).await,
+        Submit(args) => commands::submit(&app, args).await,
     }
 }
 
