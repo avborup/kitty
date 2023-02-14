@@ -157,10 +157,12 @@ async fn show_submission_status(app: &App, submission_id: &str) -> crate::Result
                 .count();
             let num_total = status.test_cases.len();
 
-            print!(
-                "\r{} ({num_completed}/{num_total}): {test_cases_str}",
-                "Running tests".bright_cyan()
-            );
+            let running_str = "Running tests".bright_cyan();
+            if !status.test_cases.is_empty() {
+                print!("\r{running_str} ({num_completed}/{num_total}): {test_cases_str}",);
+            } else {
+                print!("\r{running_str}...");
+            }
         }
 
         io::stdout().flush().wrap_err("Failed to flush stdout")?;
@@ -184,8 +186,15 @@ async fn show_submission_status(app: &App, submission_id: &str) -> crate::Result
                     eyre::bail!("Unreachable state was reached: finished without accepted/rejected")
                 }
             };
+
+            let num_passed_str = if !status.test_cases.is_empty() {
+                format!(" {num_accepted}/{num_total} passed.")
+            } else {
+                "".to_string()
+            };
+
             println!(
-                "Submission result: {outcome}. {num_accepted}/{num_total} passed. Time: {}.",
+                "Submission result: {outcome}.{num_passed_str} Time: {}.",
                 status.cpu_time
             );
 
