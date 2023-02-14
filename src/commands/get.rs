@@ -45,7 +45,10 @@ pub async fn get(app: &App, args: &GetArgs) -> crate::Result<()> {
 
 async fn problem_exists(app: &App, problem_id: &str) -> crate::Result<bool> {
     let url = make_problem_url(app, problem_id)?;
-    let response = reqwest::get(&url)
+    let response = app
+        .client
+        .get(&url)
+        .send()
         .await
         .wrap_err("Failed to send request to Kattis")?;
 
@@ -86,7 +89,10 @@ pub async fn fetch_tests(
     fs::create_dir(&test_dir).wrap_err("Failed to create test files directory")?;
 
     let zip_url = make_problem_sample_tests_zip_url(app, problem_id)?;
-    let zip_response = reqwest::get(&zip_url)
+    let zip_response = app
+        .client
+        .get(&zip_url)
+        .send()
         .await
         .wrap_err("Failed to send request to Kattis")?;
 

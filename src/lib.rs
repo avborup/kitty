@@ -1,8 +1,10 @@
 use colored::Colorize;
+use kattis_client::KattisClient;
 
 pub mod cli;
 mod commands;
 mod config;
+mod kattis_client;
 mod problem;
 mod solution;
 mod utils;
@@ -13,6 +15,7 @@ pub type Result<T> = eyre::Result<T>;
 pub struct App {
     args: cli::KittyArgs,
     config: config::Config,
+    client: KattisClient,
 }
 
 pub async fn run(args: cli::KittyArgs) {
@@ -28,7 +31,11 @@ async fn try_run(args: cli::KittyArgs) -> crate::Result<()> {
 
     let config = config::Config::load()?;
 
-    let app = App { args, config };
+    let app = App {
+        args,
+        config,
+        client: KattisClient::new()?,
+    };
 
     match &app.args.subcommand {
         Config(args) => commands::config(&app, args).await,
