@@ -321,13 +321,14 @@ impl TestCaseStatus {
 }
 
 impl SubmissionStage {
-    fn from_string(s: &str) -> Self {
-        let s = s.trim();
-        match s.to_lowercase().as_str() {
-            "running" => Self::RunningTests,
-            "new" | "compiling" => Self::BeforeTests(s.to_string()),
-            "accepted" => Self::Accepted,
-            _ => Self::Rejected(s.to_string()),
+    fn from_string(stage: &str) -> Self {
+        let stage = stage.trim().to_string();
+
+        match stage.to_lowercase().as_str() {
+            s if s.contains("running") => Self::RunningTests,
+            s if s.contains("new") || s.contains("compiling") => Self::BeforeTests(stage),
+            s if s.contains("accepted") => Self::Accepted,
+            _ => Self::Rejected(stage),
         }
     }
 
