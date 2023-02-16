@@ -1,6 +1,11 @@
 # Kitty
 Kitty is a command line interface for interacting with the [Kattis](https://open.kattis.com) platform for coding challenges. Kitty allows you to fetch problems and test and submit solutions straight from your terminal - and with more features to come!
 
+<div align="center">
+  <video src="https://user-images.githubusercontent.com/16561050/219478817-ec121385-6899-447c-ab70-2a32307f0e87.mp4">
+</div>
+<br>
+
 Credit must be given where credit is due; this CLI has been inspired by the [official submission script from Kattis](https://open.kattis.com/help/submit) and the Python Kat CLI from the guys over at [Duckapple/Kat](https://github.com/Duckapple/Kat).
 
 ## Usage
