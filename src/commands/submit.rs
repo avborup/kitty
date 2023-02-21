@@ -77,6 +77,14 @@ async fn submit_solution(app: &App, solution: &Solution<'_>) -> crate::Result<St
     let kattisrc = app.config.try_kattisrc()?;
     let file_name = resolve_and_get_file_name(&solution.file)?;
 
+    // This will work for the vast majority of cases, but it may fail in some
+    // instances. It has to be improved in the future if there is any problem.
+    // Kattis doesn't care about mainclass if the programming language doesn't
+    // need it (for example Python), so whatever we set doesn't matter. For the
+    // languages where it is required (for example Java), the file name is very
+    // likely to be the same as the main class name.
+    let main_class = file_name.split('.').next().unwrap_or_default().to_string();
+
     let file_bytes = fs::read(&solution.file).wrap_err("Failed to read solution file")?;
     let file_part = Part::bytes(file_bytes)
         .file_name(file_name)
@@ -86,6 +94,7 @@ async fn submit_solution(app: &App, solution: &Solution<'_>) -> crate::Result<St
         .text("problem", solution.id.clone())
         .text("language", solution.lang.to_string())
         .part("sub_file[]", file_part)
+        .text("mainclass", main_class)
         .text("submit_ctr", "2")
         .text("submit", "true")
         .text("script", "true");

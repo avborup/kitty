@@ -109,3 +109,40 @@ fn runtime_error_shows_incomplete_test_run() {
         .boxed()
     }));
 }
+
+#[test]
+#[serial]
+fn lang_with_main_class_can_be_submitted() {
+    run_with_sandbox(Box::new(|env| {
+        async move {
+            make_standard_setup(&env).await;
+
+            env.copy("./tests/kitty-cli/data/quadrant", "/work/quadrant");
+            env.copy(
+                "./tests/kitty-cli/data/quadrant.java",
+                "/work/quadrant/quadrant.java",
+            );
+
+            env.run("kitty submit quadrant -y -f quadrant/quadrant.java")
+                .await
+                .assert(
+                    StdOut,
+                    contains(indoc::indoc! {r#"
+                        Problem:  quadrant
+                        Language: Java
+                        File:     quadrant.java
+                        Submitted solution to https://open.kattis.com/submissions
+                    "#}),
+                )
+                .assert(
+                    StdOut,
+                    contains("Running tests (17/17): 🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢🟢"),
+                )
+                .assert(
+                    StdOut,
+                    contains("Submission result: ok. 17/17 passed. Time: 0."),
+                );
+        }
+        .boxed()
+    }));
+}
