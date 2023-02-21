@@ -20,9 +20,6 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - run: rustup component add rustfmt
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --target aarch64-apple-darwin
+      - run: rustup target add aarch64-apple-darwin
+      - run: cargo build --target aarch64-apple-darwin
       - run: ./target/aarch64-apple-darwin/debug/kitty --help
