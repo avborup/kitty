@@ -11,15 +11,50 @@ env:
 
 jobs:
   build:
-    name: Universal macOS build
-    runs-on: macos-latest
+    name: Build for ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: kitty.exe
+            target: x86_64-pc-windows-msvc.exe
+          - os: ubuntu-latest
+            artifact_name: kitty
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            artifact_name: kitty
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            artifact_name: kitty
+            target: aarch64-apple-darwin
+
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install latest Rust toolchain
+        uses: actions-rs/toolchain@v1
         with:
-          profile: minimal
           toolchain: stable
+          default: true
           override: true
-      - run: rustup target add aarch64-apple-darwin
-      - run: cargo build --target aarch64-apple-darwin
-      - run: ./target/aarch64-apple-darwin/debug/kitty --help
+
+      - name: Add build target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Build binary
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Strip binary
+        if: runner.os == 'Linux' || runner.os == 'macOS'
+        run: strip target/${{ matrix.target }}/${{ matrix.artifact_name }}
+
+      - name: Upload binary to release
+        uses: svenstaro/upload-release-action@v1-release
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/${{ matrix.target }}/${{ matrix.artifact_name }}
+          asset_name: kitty-${{ matrix.target }}
+          tag: ${{ github.event.release.tag_name }}
