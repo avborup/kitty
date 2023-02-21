@@ -19,7 +19,7 @@ jobs:
         include:
           - os: windows-latest
             artifact_name: kitty.exe
-            target: x86_64-pc-windows-msvc.exe
+            target: x86_64-pc-windows-msvc
           - os: ubuntu-latest
             artifact_name: kitty
             target: x86_64-unknown-linux-gnu
