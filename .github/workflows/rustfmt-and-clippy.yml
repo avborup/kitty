@@ -37,7 +37,7 @@ jobs:
       - name: Install latest Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           default: true
           override: true
 
@@ -45,16 +45,16 @@ jobs:
         run: rustup target add ${{ matrix.target }}
 
       - name: Build binary
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo +nightly build --release --target ${{ matrix.target }} --out-dir kitty-artifacts -Z unstable-options
 
       - name: Strip binary
         if: runner.os == 'Linux' || runner.os == 'macOS'
-        run: strip target/${{ matrix.target }}/${{ matrix.artifact_name }}
+        run: strip kitty-artifacts/${{ matrix.artifact_name }}
 
       - name: Upload binary to release
         uses: svenstaro/upload-release-action@v1-release
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/${{ matrix.target }}/${{ matrix.artifact_name }}
-          asset_name: kitty-${{ matrix.target }}
+          file: kitty-artifacts/${{ matrix.artifact_name }}
+          asset_name: ${{ matrix.target }}-${{ matrix.artifact_name }}
           tag: ${{ github.event.release.tag_name }}
