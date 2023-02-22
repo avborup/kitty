@@ -51,10 +51,15 @@ jobs:
         if: runner.os == 'Linux' || runner.os == 'macOS'
         run: strip kitty-artifacts/${{ matrix.artifact_name }}
 
-      - name: Upload binary to release
-        uses: svenstaro/upload-release-action@v1-release
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: kitty-artifacts/${{ matrix.artifact_name }}
-          asset_name: ${{ matrix.target }}-${{ matrix.artifact_name }}
-          tag: ${{ github.event.release.tag_name }}
+      - name: Show output
+        run: |
+          echo "${{ matrix.target }}-${{ matrix.artifact_name }}"
+          ls -l kitty-artifacts
+
+      # - name: Upload binary to release
+      #   uses: svenstaro/upload-release-action@v1-release
+      #   with:
+      #     repo_token: ${{ secrets.GITHUB_TOKEN }}
+      #     file: kitty-artifacts/${{ matrix.artifact_name }}
+      #     asset_name: ${{ matrix.target }}-${{ matrix.artifact_name }}
+      #     tag: ${{ github.event.release.tag_name }}
