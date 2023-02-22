@@ -18,17 +18,17 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            artifact_name: kitty.exe
             target: x86_64-pc-windows-msvc
+            exe_ext: .exe
           - os: ubuntu-latest
-            artifact_name: kitty
             target: x86_64-unknown-linux-gnu
+            exe_ext: ''
           - os: macos-latest
-            artifact_name: kitty
             target: x86_64-apple-darwin
+            exe_ext: ''
           - os: macos-latest
-            artifact_name: kitty
             target: aarch64-apple-darwin
+            exe_ext: ''
 
     steps:
       - name: Checkout code
@@ -49,11 +49,12 @@ jobs:
 
       - name: Strip binary
         if: runner.os == 'Linux' || runner.os == 'macOS'
-        run: strip kitty-artifacts/${{ matrix.artifact_name }}
+        run: strip kitty-artifacts/kitty${{ matrix.exe_ext }}
 
       - name: Show output
         run: |
-          echo "${{ matrix.target }}-${{ matrix.artifact_name }}"
+          echo "kitty-${{ matrix.target }}${{ matrix.exe_ext }}"
+          cp kitty-artifacts/${{ matrix.exe_ext }} kitty-artifacts/kitty-${{ matrix.target }}${{ matrix.exe_ext }}
           ls -l kitty-artifacts
 
       # - name: Upload binary to release
