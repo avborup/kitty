@@ -54,7 +54,7 @@ jobs:
       - name: Show output
         run: |
           echo "kitty-${{ matrix.target }}${{ matrix.exe_ext }}"
-          cp kitty-artifacts/${{ matrix.exe_ext }} kitty-artifacts/kitty-${{ matrix.target }}${{ matrix.exe_ext }}
+          cp kitty-artifacts/kitty${{ matrix.exe_ext }} kitty-artifacts/kitty-${{ matrix.target }}${{ matrix.exe_ext }}
           ls -l kitty-artifacts
 
       # - name: Upload binary to release
