@@ -6,21 +6,24 @@ on:
 
 jobs:
   build:
-    name: Build for ${{ matrix.os }}
+    name: Build for ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
         include:
           - os: windows-latest
-            artifact_name: kitty.exe
-            asset_name: kitty-x86_64-pc-windows-msvc.exe
+            target: x86_64-pc-windows-msvc
+            exe_ext: .exe
           - os: ubuntu-latest
-            artifact_name: kitty
-            asset_name: kitty-x86_64-unknown-linux-gnu
+            target: x86_64-unknown-linux-gnu
+            exe_ext: ''
           - os: macos-latest
-            artifact_name: kitty
-            asset_name: kitty-x86_64-apple-darwin
+            target: x86_64-apple-darwin
+            exe_ext: ''
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            exe_ext: ''
 
     steps:
       - name: Checkout code
@@ -29,21 +32,24 @@ jobs:
       - name: Install latest Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           default: true
           override: true
 
+      - name: Add build target
+        run: rustup target add ${{ matrix.target }}
+
       - name: Build binary
-        run: cargo build --release
+        run: cargo +nightly build --release --target ${{ matrix.target }} --out-dir kitty-artifacts -Z unstable-options
 
       - name: Strip binary
         if: runner.os == 'Linux' || runner.os == 'macOS'
-        run: strip target/release/${{ matrix.artifact_name }}
+        run: strip kitty-artifacts/kitty${{ matrix.exe_ext }}
 
       - name: Upload binary to release
         uses: svenstaro/upload-release-action@v1-release
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/release/${{ matrix.artifact_name }}
-          asset_name: ${{ matrix.asset_name }}
+          file: kitty-artifacts/kitty${{ matrix.exe_ext }}
+          asset_name: kitty-${{ matrix.target }}${{ matrix.exe_ext }}
           tag: ${{ github.event.release.tag_name }}

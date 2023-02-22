@@ -10,57 +10,34 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-    name: Build for ${{ matrix.target }}
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        include:
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            exe_ext: .exe
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            exe_ext: ''
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            exe_ext: ''
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            exe_ext: ''
-
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Install latest Rust toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
-          default: true
+          profile: minimal
+          toolchain: stable
           override: true
+      - run: rustup component add rustfmt
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
 
-      - name: Add build target
-        run: rustup target add ${{ matrix.target }}
-
-      - name: Build binary
-        run: cargo +nightly build --release --target ${{ matrix.target }} --out-dir kitty-artifacts -Z unstable-options
-
-      - name: Strip binary
-        if: runner.os == 'Linux' || runner.os == 'macOS'
-        run: strip kitty-artifacts/kitty${{ matrix.exe_ext }}
-
-      - name: Show output
-        run: |
-          echo "kitty-${{ matrix.target }}${{ matrix.exe_ext }}"
-          cp kitty-artifacts/kitty${{ matrix.exe_ext }} kitty-artifacts/kitty-${{ matrix.target }}${{ matrix.exe_ext }}
-          ls -l kitty-artifacts
-
-      # - name: Upload binary to release
-      #   uses: svenstaro/upload-release-action@v1-release
-      #   with:
-      #     repo_token: ${{ secrets.GITHUB_TOKEN }}
-      #     file: kitty-artifacts/${{ matrix.artifact_name }}
-      #     asset_name: ${{ matrix.target }}-${{ matrix.artifact_name }}
-      #     tag: ${{ github.event.release.tag_name }}
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: rustup component add clippy
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings
