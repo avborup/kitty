@@ -24,6 +24,12 @@ Run:
 cargo run -- <args for kitty here>
 ```
 
+If you want to install your local version of kitty on your computer, you can use:
+
+```sh
+cargo install --path .
+```
+
 ## Testing
 
 ### Environment variables
