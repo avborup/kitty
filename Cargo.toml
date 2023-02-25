@@ -4,6 +4,12 @@ version = "0.8.0"
 authors = ["Adrian Borup <adrian@borup.com>"]
 edition = "2021"
 
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
+codegen-units = 1
+
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 color-eyre = "0.6"
