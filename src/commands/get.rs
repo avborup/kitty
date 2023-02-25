@@ -36,7 +36,7 @@ pub async fn get(app: &App, args: &GetArgs) -> crate::Result<()> {
 
     println!(
         "{} solution folder for {}",
-        "created".bright_green(),
+        "Created".bright_green(),
         args.problem_id
     );
 
