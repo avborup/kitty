@@ -152,6 +152,11 @@ pub struct TestArgs {
     /// Re-runs tests every time the source file changes.
     #[arg(short, long, default_value_t = false)]
     pub watch: bool,
+
+    /// Filter which tests to run. Only tests whose name contain the given
+    /// filter will be used.
+    #[arg(short = 'F', long)]
+    pub filter: Option<String>,
 }
 
 /// Opens a problem in the browser

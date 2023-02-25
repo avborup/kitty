@@ -60,7 +60,13 @@ fn run_tests(
         run_compile_cmd(app, compile_cmd)?;
     }
 
-    let test_cases = get_test_cases(&solution.dir)?;
+    let mut test_cases = get_test_cases(&solution.dir)?;
+
+    if let Some(filter) = &args.filter {
+        let filter = filter.to_lowercase();
+        test_cases.retain(|test_case| test_case.name.to_lowercase().contains(&filter));
+    }
+
     let mut num_failed_tests = 0;
 
     println!("Running {} tests\n", test_cases.len());
