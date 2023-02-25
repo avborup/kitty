@@ -25,6 +25,7 @@ webbrowser = "0.8"
 serde = { version = "1", features = ["derive"] }
 scraper = "0.14"
 selectors = "0.22"
+self_update = "0.36"
 
 [dev-dependencies]
 dockertest = "0.3"

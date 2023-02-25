@@ -32,6 +32,16 @@ pub enum KittySubcommand {
     /// example --lang when running tests), provide its extension exactly as
     /// shown in the output of this command.
     Langs,
+
+    /// Updates kitty to the latest version
+    ///
+    /// The currently installed binary will be replaced with the one at
+    /// https://github.com/avborup/kitty/releases/latest
+    ///
+    /// If no binary is found for your architecture and/or operating system,
+    /// please open an issue on kitty's GitHub repository! Alternatively, you
+    /// can manage the kitty installation yourself via cargo.
+    Update,
 }
 
 /// A utility to help you configure kitty
