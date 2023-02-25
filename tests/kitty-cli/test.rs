@@ -207,7 +207,7 @@ fn filter_only_runs_matching_tests() {
                     "#}),
                 );
 
-            env.run("cd quadrant && kitty test --filter custom")
+            env.run("cd quadrant && kitty test --filter '^custom'")
                 .await
                 .assert(
                     StdOut,

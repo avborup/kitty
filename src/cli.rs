@@ -153,8 +153,20 @@ pub struct TestArgs {
     #[arg(short, long, default_value_t = false)]
     pub watch: bool,
 
-    /// Filter which tests to run. Only tests whose name contain the given
-    /// filter will be used.
+    /// Filter which tests to run. Filters are written using regular
+    /// expressions to match on test names.
+    ///
+    /// This can be useful for focusing on a few specific test cases when
+    /// debugging.
+    ///
+    /// Here are some examples:
+    /// Only tests containing "custom": --filter custom.
+    /// Only the exact test named "custom01": --filter '^custom01$'.
+    /// Only tests that are named one of the numbers from 1 to 5: --filter '^[1-5]$'.
+    ///
+    /// Note that (depending on your shell), you may have to use quotes around
+    /// the filter since the shell may try to expand the regular expression as a
+    /// glob pattern.
     #[arg(short = 'F', long)]
     pub filter: Option<String>,
 }
