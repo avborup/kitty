@@ -1,44 +1,48 @@
-use crate::commands::get;
-use crate::problem::Problem;
-use crate::utils::prompt_bool;
-use crate::StdErr;
-use clap::ArgMatches;
+use std::{
+    fs::{self, File},
+    io::{self, stdout, Write},
+    path::Path,
+    process::Command,
+    time::Instant,
+};
+
 use colored::Colorize;
-use notify::{watcher, DebouncedEvent, RecursiveMode, Watcher};
-use std::fs::{self, File};
-use std::io::{Read, Write};
-use std::path::PathBuf;
-use std::process::{Command, Stdio};
-use std::sync::mpsc::channel;
-use std::time;
-use std::time::Duration;
+use eyre::{bail, Context};
+use notify::{event::ModifyKind, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 
-const CHECKBOX: &str = "\u{2705}"; // Green checkbox emoji
-const CROSSMARK: &str = "\u{274C}"; // Red X emoji
+use crate::{
+    cli::TestArgs,
+    config::language::ExecuteProgramCommands,
+    solution::{get_test_cases, get_test_dir, Solution, SolutionOptions, TestCase},
+    utils::prompt_bool,
+    App,
+};
 
-pub async fn test(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
-    let problem = Problem::from_args(cmd)?;
-    let lang = problem.lang();
-    let file = problem.file();
+const SUCCESS: &str = "✅";
+const FAILURE: &str = "❌";
 
-    let test_dir = problem.path().join("test");
-    if !test_dir.exists()
-        && (cmd.is_present("fetch")
-            || prompt_bool("no test cases found. do you want to fetch them from kattis?"))
-    {
-        fetch_tests(&problem).await?;
-    }
+pub async fn test(app: &App, args: &TestArgs) -> crate::Result<()> {
+    let solution = Solution::from_folder(
+        app,
+        &args.path,
+        SolutionOptions {
+            file_path: args.file.as_ref(),
+            lang: args.lang.as_ref(),
+        },
+    )?;
 
-    let test_runner = || -> Result<(), StdErr> {
-        let compile_cmd = lang.get_compile_cmd(&file)?;
-        let run_cmd = lang.get_run_cmd(&file)?;
-        let tests = problem.get_test_files()?;
+    fetch_tests_if_needed(app, args, &solution.id, &solution.dir).await?;
 
-        run_tests(compile_cmd, &run_cmd, &tests, cmd)
+    let test_runner = || -> crate::Result<()> {
+        let execution_commands = solution
+            .lang
+            .get_program_execution_commands(&solution.file)?;
+
+        run_tests(app, args, &solution, execution_commands)
     };
 
-    if cmd.is_present("watch") {
-        watch(&problem, &test_runner)?;
+    if args.watch {
+        watch(&solution, Box::new(test_runner))?;
     } else {
         test_runner()?;
     }
@@ -46,203 +50,228 @@ pub async fn test(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
     Ok(())
 }
 
-async fn fetch_tests(problem: &Problem<'_>) -> Result<(), StdErr> {
-    let problem_url = get::create_problem_url(&problem.name())?;
-    get::fetch_tests(&problem.path(), &problem_url).await
-}
-
 fn run_tests(
-    compile_cmd: Option<Vec<String>>,
-    run_cmd: &[String],
-    tests: &[(PathBuf, PathBuf)],
-    cmd: &ArgMatches<'_>,
-) -> Result<(), StdErr> {
-    if let Some(cmd) = compile_cmd {
-        let mut compile_parts = cmd.iter();
-        let compile_prog = compile_parts
-            .next()
-            .ok_or_else::<StdErr, _>(|| "compile command was empty".into())?;
-        let compile_args: Vec<_> = compile_parts.collect();
-
-        let mut command = Command::new(compile_prog);
-        command.args(&compile_args).stderr(Stdio::piped());
-
-        let child = match command.spawn() {
-            Ok(c) => c,
-            Err(_) => return Err(format!("failed to execute command \"{}\"", compile_prog).into()),
-        };
-
-        let output = match child.wait_with_output() {
-            Ok(o) => o,
-            Err(_) => return Err("failed to wait for compilation output".into()),
-        };
-
-        if !output.status.success() {
-            let stderr = match String::from_utf8(output.stderr) {
-                Ok(s) => s,
-                Err(_) => return Err("compilation output stderr contained invalid UTF-8".into()),
-            };
-
-            println!("{}:\n{}\n", "compilation error".bright_red(), stderr.trim());
-
-            return Err("program failed to compile".into());
-        }
+    app: &App,
+    args: &TestArgs,
+    solution: &Solution,
+    execution_commands: ExecuteProgramCommands,
+) -> crate::Result<()> {
+    if let Some(compile_cmd) = execution_commands.compile_cmd() {
+        run_compile_cmd(app, compile_cmd)?;
     }
 
-    let mut run_parts = run_cmd.iter();
-    let run_prog = run_parts
-        .next()
-        .ok_or_else::<StdErr, _>(|| "run command was empty".into())?;
-    let run_args: Vec<_> = run_parts.collect();
-    let mut fails = 0;
+    let test_cases = get_test_cases(&solution.dir)?;
+    let mut num_failed_tests = 0;
 
-    println!("running {} tests", tests.len());
+    println!("Running {} tests\n", test_cases.len());
 
-    for (test_in, test_ans) in tests {
-        // We can unwrap because the file extension check earlier would ensure
-        // that the file was skipped if it did not have a valid name
-        let test_label = test_in.file_stem().unwrap().to_str().unwrap().to_string();
+    for test_case in &test_cases {
+        print!("test {} ... ", test_case.name);
+        stdout().flush().wrap_err("Failed to flush output")?;
 
-        print!("test {} ... ", test_label);
-
-        let mut f_in = File::open(test_in)?;
-        let mut in_buf = Vec::new();
-        f_in.read_to_end(&mut in_buf)?;
-
-        let ans = fs::read_to_string(test_ans)?;
-
-        let start_time = time::Instant::now();
-        let mut command = Command::new(run_prog);
-        command
-            .args(&run_args)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
-
-        let mut child = match command.spawn() {
-            Ok(c) => c,
-            Err(_) => return Err(format!("failed to execute command \"{}\"", run_prog).into()),
-        };
-
-        {
-            let child_stdin = match child.stdin.as_mut() {
-                Some(c) => c,
-                None => return Err("failed to capture stdin of program".into()),
-            };
-
-            match child_stdin.write_all(&in_buf) {
-                Ok(_) => {}
-                Err(_) => return Err("failed to write to stdin of program".into()),
-            }
-        }
-
-        let output = match child.wait_with_output() {
-            Ok(o) => o,
-            Err(_) => return Err("failed to wait for program output".into()),
-        };
+        let start_time = Instant::now();
+        let outcome = run_test(app, execution_commands.run_cmd(), test_case)?;
         let elapsed_time = start_time.elapsed();
 
-        let stdout = match String::from_utf8(output.stdout) {
-            Ok(s) => s,
-            Err(_) => return Err("program output (stdout) contained invalid UTF-8".into()),
-        };
+        print!("{}", if outcome.is_ok() { SUCCESS } else { FAILURE });
 
-        if output.status.success() {
-            let ans_str = reformat_ans_str(&ans);
-            let out_str = reformat_ans_str(&stdout);
-            let is_success = ans_str == out_str;
+        if args.time {
+            print!(" in {:.2}s", elapsed_time.as_secs_f64());
+        }
 
-            print!("{}", if is_success { CHECKBOX } else { CROSSMARK });
+        if outcome.is_err() {
+            num_failed_tests += 1;
+        }
 
-            if cmd.is_present("time") {
-                print!(" in {:.2}s", elapsed_time.as_secs_f64());
+        println!();
+
+        match outcome {
+            Ok(_) => {}
+            Err(TestCaseError::WrongAnswer { expected, actual }) => {
+                println!("{}", "Expected:".underline());
+                println!("{expected}\n");
+                println!("{}", "Actual:".underline());
+                println!("{actual}\n");
             }
-
-            println!();
-
-            if !is_success {
-                fails += 1;
-
-                println!(
-                    "{}\n{}\n\n{}\n{}\n",
-                    "Expected:".underline(),
-                    ans_str,
-                    "Actual:".underline(),
-                    out_str
-                );
+            Err(TestCaseError::RuntimeError { stdout, stderr }) => {
+                println!("{}:", "Runtime error".bright_red());
+                if !stdout.is_empty() {
+                    println!("{stdout}");
+                }
+                println!("{stderr}\n");
             }
-        } else {
-            fails += 1;
-
-            let stderr = match String::from_utf8(output.stderr) {
-                Ok(s) => s,
-                Err(_) => return Err("program output (stderr) contained invalid UTF-8".into()),
-            };
-
-            println!(
-                "{}:\n{}\n{}\n",
-                "program error".bright_red(),
-                stdout.trim(),
-                stderr.trim()
-            );
         }
     }
 
-    let test_result = if fails == 0 {
+    let overall_outcome = if num_failed_tests == 0 {
         "ok".bright_green()
     } else {
         "failed".bright_red()
     };
-    let num_passed = tests.len() - fails;
+    let num_passed_tests = test_cases.len() - num_failed_tests;
+
     println!(
-        "\ntest result: {}. {} passed; {} failed.",
-        test_result, num_passed, fails
+        "\nTest result: {overall_outcome}. {num_passed_tests} passed; {num_failed_tests} failed.",
     );
 
     Ok(())
 }
 
-fn reformat_ans_str(s: &str) -> String {
-    s.replace("\r\n", "\n")
-        .trim_end()
-        .lines()
-        .map(str::trim_end)
-        .collect::<Vec<&str>>()
-        .join("\n")
+type TestCaseResult = Result<(), TestCaseError>;
+
+enum TestCaseError {
+    WrongAnswer { expected: String, actual: String },
+    RuntimeError { stdout: String, stderr: String },
 }
 
-fn watch<F: Fn() -> Result<(), StdErr>>(problem: &Problem, test_runner: F) -> Result<(), StdErr> {
-    let (tx, rx) = channel();
-    let mut watcher = watcher(tx, Duration::from_secs(1)).unwrap();
+fn run_test(app: &App, run_cmd: &[String], test_case: &TestCase) -> crate::Result<TestCaseResult> {
+    let (run_program, run_program_args) = run_cmd
+        .split_first()
+        .ok_or_else(|| eyre::eyre!("Run command is empty"))?;
 
-    let src_file = problem.file();
-    watcher.watch(&src_file, RecursiveMode::NonRecursive)?;
+    if app.args.verbose {
+        eprintln!(
+            "Run command:\n\n   {}\n",
+            shlex::join(run_cmd.iter().map(String::as_str))
+        );
+    }
 
+    let expected_answer =
+        fs::read_to_string(&test_case.answer_file).wrap_err("Failed to read answer file")?;
+    let input_file = File::open(&test_case.input_file).wrap_err("Failed to open input file")?;
+
+    let output = Command::new(run_program)
+        .args(run_program_args)
+        .stdin(input_file)
+        .output()
+        .map_err(|err| match err.kind() {
+            io::ErrorKind::NotFound => {
+                eyre::eyre!("Failed to find the runner program '{}'", run_program)
+            }
+            _ => eyre::eyre!("Failed to run the runner program: {}", err),
+        })?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+    if !output.status.success() {
+        return Ok(Err(TestCaseError::RuntimeError { stdout, stderr }));
+    }
+
+    if !are_equal_after_normalisation(&stdout, &expected_answer) {
+        return Ok(Err(TestCaseError::WrongAnswer {
+            expected: expected_answer.trim_end().to_string(),
+            actual: stdout.trim_end().to_string(),
+        }));
+    }
+
+    Ok(Ok(()))
+}
+
+fn run_compile_cmd(app: &App, compile_cmd: &[String]) -> crate::Result<()> {
+    let (compiler_program, compiler_args) = compile_cmd
+        .split_first()
+        .ok_or_else(|| eyre::eyre!("Compile command is empty"))?;
+
+    if app.args.verbose {
+        eprintln!(
+            "Compiler command:\n\n   {}\n",
+            shlex::join(compile_cmd.iter().map(String::as_str))
+        );
+    }
+
+    let output = Command::new(compiler_program)
+        .args(compiler_args)
+        .output()
+        .map_err(|err| match err.kind() {
+            io::ErrorKind::NotFound => {
+                eyre::eyre!("Failed to find the compiler program '{}'", compiler_program)
+            }
+            _ => eyre::eyre!("Failed to run the compiler program: {}", err),
+        })?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+
+        eprintln!("{}:", "Compilation error".bright_red());
+        eprintln!("{stdout}");
+        eprintln!("{stderr}");
+
+        bail!("Failed to compile program ({})", output.status);
+    }
+
+    Ok(())
+}
+
+fn are_equal_after_normalisation(a: &str, b: &str) -> bool {
+    fn normalise(s: &str) -> String {
+        s.trim_end()
+            .lines()
+            .map(str::trim_end)
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    normalise(a) == normalise(b)
+}
+
+async fn fetch_tests_if_needed(
+    app: &App,
+    args: &TestArgs,
+    problem_id: &str,
+    solution_dir: impl AsRef<Path>,
+) -> crate::Result<()> {
+    let test_dir = get_test_dir(&solution_dir);
+
+    if test_dir.exists() {
+        return Ok(());
+    }
+
+    if args.fetch || prompt_bool("No test cases found. Do you want to fetch them from Kattis?")? {
+        crate::commands::get::fetch_tests(app, solution_dir, problem_id)
+            .await
+            .wrap_err("Failed to fetch test cases")?;
+    }
+
+    Ok(())
+}
+
+fn watch(solution: &Solution, test_runner: impl Fn() -> crate::Result<()>) -> crate::Result<()> {
     let test_runner_wrapper = || {
         if let Err(e) = test_runner() {
-            eprintln!("{}: {}", "error".bright_red(), e);
+            eprintln!("{}: {e}", "Error".bright_red());
         }
 
         println!(
             "\n{} {}...\n",
             "watching".bright_cyan(),
-            src_file
+            solution
+                .file
                 .file_name()
-                .expect("couldn't read file name")
+                .unwrap_or_default()
                 .to_string_lossy()
                 .underline(),
         );
     };
 
+    let (tx, rx) = std::sync::mpsc::channel();
+
+    let mut watcher = RecommendedWatcher::new(tx, notify::Config::default())
+        .wrap_err("Failed to create file watcher")?;
+
+    watcher
+        .watch(&solution.file, RecursiveMode::NonRecursive)
+        .wrap_err("Failed to watch file")?;
+
     test_runner_wrapper();
-    loop {
-        match rx.recv() {
-            Ok(event) => {
-                if let DebouncedEvent::NoticeWrite(_) = event {
-                    test_runner_wrapper();
-                }
-            }
-            Err(_) => return Err("something went wrong during file watching".into()),
+    for event in rx {
+        let event = event.wrap_err("Something went wrong during file watching")?;
+
+        if let EventKind::Modify(ModifyKind::Data(_)) = event.kind {
+            test_runner_wrapper();
         }
     }
+
+    Ok(())
 }

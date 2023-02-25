@@ -1,45 +1,66 @@
-use crate::config::Credentials;
-use crate::StdErr;
-use reqwest::multipart::Form;
-use reqwest::{Client, Response};
+use std::ops::Deref;
+
+use eyre::Context;
+use reqwest::{multipart::Form, Client, StatusCode};
+use secrecy::ExposeSecret;
+
+use crate::App;
 
 pub const USER_AGENT: &str = env!("CARGO_PKG_NAME");
 
+#[derive(Debug)]
 pub struct KattisClient {
     pub client: Client,
 }
 
+impl Deref for KattisClient {
+    type Target = Client;
+
+    fn deref(&self) -> &Self::Target {
+        &self.client
+    }
+}
+
 impl KattisClient {
-    pub fn new() -> Result<Self, StdErr> {
+    pub fn new() -> crate::Result<Self> {
         let client = Client::builder()
             .cookie_store(true)
             .user_agent(USER_AGENT)
-            .build()?;
+            .build()
+            .wrap_err("Failed to instantiate HTTP client")?;
 
         Ok(Self { client })
     }
 
-    pub async fn login(&self, creds: Credentials, login_url: &str) -> Result<Response, StdErr> {
-        let form = Form::new()
-            .text("user", creds.username)
-            .text("token", creds.token)
-            .text("script", "true");
-        let res = self.client.post(login_url).multipart(form).send().await?;
+    pub async fn login(&self, app: &App) -> crate::Result<()> {
+        let kattisrc = app.config.try_kattisrc()?;
 
-        let status = res.status();
-        if !status.is_success() {
-            match res.status().as_str() {
-                "403" => {
-                    return Err("the login credentials from your .kattisrc are not valid".into())
-                }
-                _ => {
-                    return Err(
-                        format!("failed to log in to kattis (http status code {})", status).into(),
-                    )
-                }
-            }
+        let form = Form::new()
+            .text("user", kattisrc.user.username.clone())
+            .text("token", kattisrc.user.token.expose_secret().clone())
+            .text("script", "true");
+
+        let res = self
+            .client
+            .post(&kattisrc.kattis.login_url)
+            .multipart(form)
+            .send()
+            .await
+            .wrap_err("Failed to send login request to Kattis")?;
+
+        if res.status() == StatusCode::FORBIDDEN {
+            eyre::bail!(
+                "Invalid username/token for Kattis. Please check your .kattisrc credentials."
+            )
         }
 
-        Ok(res)
+        if !res.status().is_success() {
+            eyre::bail!(
+                "Failed to log in to Kattis (http status code {})",
+                res.status()
+            );
+        }
+
+        Ok(())
     }
 }

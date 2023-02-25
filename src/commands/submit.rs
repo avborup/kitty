@@ -1,280 +1,351 @@
-use crate::config::Credentials;
-use crate::kattis_client::KattisClient;
-use crate::problem::Problem;
-use crate::StdErr;
-use crate::CFG as cfg;
-use clap::ArgMatches;
+use std::{
+    fs,
+    io::{self, Write},
+    time::Duration,
+};
+
 use colored::Colorize;
+use eyre::Context;
 use regex::Regex;
 use reqwest::multipart::{Form, Part};
-use scraper::{Html, Selector};
+use scraper::{node::Element, Html, Selector};
 use selectors::attr::CaseSensitivity;
-use std::fs;
-use std::io::{self, Write};
-use std::thread;
-use std::time::Duration;
+use serde::Deserialize;
+use tokio::time::sleep;
 
-const CHECKBOX: &str = "\u{2705}"; // Green checkbox emoji
-const CROSSMARK: &str = "\u{274C}"; // Red X emoji
-const SLEEP_DURATION: Duration = Duration::from_secs(1);
+use crate::{
+    cli::SubmitArgs,
+    solution::{Solution, SolutionOptions},
+    utils::{prompt_bool, resolve_and_get_file_name},
+    App,
+};
 
-pub async fn submit(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
-    let problem = Problem::from_args(cmd)?;
+const REQUEST_INTERVAL_DURATION: Duration = Duration::from_millis(250);
 
-    let file_path = problem.file();
-    let file_name = match file_path.file_name() {
-        Some(f) => f,
-        None => return Err("failed to get file name".into()),
+const SUCCESS: &str = "🟢";
+const FAILURE: &str = "🔴";
+const UNKNOWN: &str = "⚪";
+
+pub async fn submit(app: &App, args: &SubmitArgs) -> crate::Result<()> {
+    let solution = Solution::from_folder(
+        app,
+        &args.path,
+        SolutionOptions {
+            file_path: args.file.as_ref(),
+            lang: args.lang.as_ref(),
+        },
+    )?;
+
+    let file_name = resolve_and_get_file_name(&solution.file)?;
+
+    println!("{}:  {}", "Problem".bright_cyan(), &solution.id);
+    println!("{}: {}", "Language".bright_cyan(), &solution.lang);
+    println!("{}:     {}", "File".bright_cyan(), &file_name);
+
+    if !args.yes && !prompt_bool("Should this be submitted?")? {
+        return Ok(());
     }
-    .to_str()
-    .expect("file path contained invalid unicode");
 
-    if !cmd.is_present("yes") {
-        println!("{}:  {}", "Problem".bright_cyan(), problem.name());
-        println!("{}: {}", "Language".bright_cyan(), problem.lang());
-        println!("{}:     {}", "File".bright_cyan(), file_name);
-        print!("Is this correct? (y/n): ");
-        io::stdout().flush().expect("failed to flush stdout");
+    app.client.login(app).await?;
 
-        let mut input = String::new();
-        if io::stdin().read_line(&mut input).is_err() {
-            return Err("failed to read input".into());
-        }
+    let submission_id = submit_solution(app, &solution).await?;
 
-        if input.trim().to_lowercase() != "y" {
-            return Ok(());
-        }
-    }
-
-    let kattisrc = cfg.kattisrc()?;
-    let creds = kattisrc.get_credentials()?;
-    let submit_url = kattisrc.get_submit_url()?;
-    let login_url = kattisrc.get_login_url()?;
-
-    let client = KattisClient::new()?;
-    client.login(creds.clone(), login_url).await?;
-
-    let id = match submit_problem(&client, &problem, submit_url).await? {
-        Some(i) => i,
-        None => return Err("something went wrong during submission".into()),
-    };
-
-    let submission_url = format!("{}/{}", kattisrc.get_submissions_url()?, &id);
-
+    let submission_url = make_submission_url(app, &submission_id)?;
     println!(
         "{} solution to {}",
-        "submitted".bright_green(),
+        "Submitted".bright_green(),
         &submission_url.underline()
     );
 
-    if cmd.is_present("open") && webbrowser::open(&submission_url).is_err() {
-        eprintln!("failed to open {} in your browser", &submission_url);
+    if args.open {
+        webbrowser::open(&submission_url).wrap_err("Failed to open submission in browser")?;
     }
 
-    show_submission_status(&client, creds, &submission_url, login_url).await?;
+    show_submission_status(app, &submission_id).await?;
 
     Ok(())
 }
 
-async fn submit_problem<'a>(
-    kc: &KattisClient,
-    problem: &Problem<'_>,
-    submit_url: &str,
-) -> Result<Option<String>, StdErr> {
-    let file_path = problem.file();
-    let file_name = file_path.file_name().unwrap().to_str().unwrap().to_string();
+fn make_submission_url(app: &App, submission_id: &str) -> crate::Result<String> {
+    Ok(format!(
+        "{}/{submission_id}",
+        app.config.try_kattisrc()?.kattis.submissions_url,
+    ))
+}
 
-    let file_bytes = match fs::read(&file_path) {
-        Ok(b) => b,
-        Err(_) => return Err("failed to read solution file".into()),
-    };
+async fn submit_solution(app: &App, solution: &Solution<'_>) -> crate::Result<String> {
+    let kattisrc = app.config.try_kattisrc()?;
+    let file_name = resolve_and_get_file_name(&solution.file)?;
+
+    // This will work for the vast majority of cases, but it may fail in some
+    // instances. It has to be improved in the future if there is any problem.
+    // Kattis doesn't care about mainclass if the programming language doesn't
+    // need it (for example Python), so whatever we set doesn't matter. For the
+    // languages where it is required (for example Java), the file name is very
+    // likely to be the same as the main class name.
+    let main_class = file_name.split('.').next().unwrap_or_default().to_string();
+
+    let file_bytes = fs::read(&solution.file).wrap_err("Failed to read solution file")?;
     let file_part = Part::bytes(file_bytes)
         .file_name(file_name)
-        .mime_str("application/octet-stream")
-        .expect("failed to set mime type for file");
+        .mime_str("application/octet-stream")?;
 
     let form = Form::new()
-        .text("problem", problem.name())
-        .text("language", problem.lang().to_string())
+        .text("problem", solution.id.clone())
+        .text("language", solution.lang.to_string())
         .part("sub_file[]", file_part)
+        .text("mainclass", main_class)
         .text("submit_ctr", "2")
         .text("submit", "true")
         .text("script", "true");
 
-    let res = kc.client.post(submit_url).multipart(form).send().await?;
+    let res = app
+        .client
+        .post(&kattisrc.kattis.submission_url)
+        .multipart(form)
+        .send()
+        .await
+        .wrap_err("Failed to send request to Kattis")?;
 
-    let status = res.status();
-    if !status.is_success() {
-        return Err(format!("failed to submit to kattis (http status code {})", status).into());
+    if !res.status().is_success() {
+        eyre::bail!(
+            "Failed to submit solution to Kattis (http status code: {})",
+            res.status()
+        )
     }
 
-    let content = match res.text().await {
-        Ok(t) => t,
-        Err(_) => return Err("failed to read response from kattis".into()),
-    };
+    let res_body = res
+        .text()
+        .await
+        .wrap_err("Failed to read response from Kattis")?;
 
-    if content.contains("Problem not found") {
-        return Err(format!("the problem \"{}\" does not exist", problem.name()).into());
+    if res_body.contains("Problem not found") {
+        eyre::bail!("The problem '{}' does not exist", solution.id)
     }
 
-    let re = Regex::new(r"ID: (\d+)").unwrap();
-    let id = re
-        .captures(&content)
+    let submission_id_regex = Regex::new(r"ID: (\d+)").unwrap();
+    let submission_id = submission_id_regex
+        .captures(&res_body)
         .and_then(|c| c.get(1))
-        .map(|i| i.as_str().to_string());
+        .map(|i| i.as_str().to_string())
+        .ok_or_else(|| {
+            eyre::eyre!(
+                "Failed to find submission ID in response from Kattis. Received: {res_body}"
+            )
+        })?;
 
-    Ok(id)
+    Ok(submission_id)
 }
 
-#[derive(Debug, Clone)]
-enum TestCase {
+async fn show_submission_status(app: &App, submission_id: &str) -> crate::Result<()> {
+    println!();
+
+    loop {
+        let status = get_submission_status(app, submission_id)
+            .await
+            .wrap_err("Failed to get submission status from Kattis")?;
+
+        if let SubmissionStage::BeforeTests(stage) = &status.verdict {
+            print!("\r{}: {stage}", "Status".bright_cyan());
+        } else {
+            let test_cases_str = status
+                .test_cases
+                .iter()
+                .map(|tc| match tc {
+                    TestCaseStatus::Accepted => SUCCESS,
+                    TestCaseStatus::Rejected(_) => FAILURE,
+                    TestCaseStatus::Unfinished => UNKNOWN,
+                })
+                .collect::<Vec<_>>()
+                .join("");
+
+            let num_completed = status
+                .test_cases
+                .iter()
+                .filter(|tc| matches!(tc, TestCaseStatus::Accepted | TestCaseStatus::Rejected(_)))
+                .count();
+            let num_total = status.test_cases.len();
+
+            let running_str = "Running tests".bright_cyan();
+            if !status.test_cases.is_empty() {
+                print!("\r{running_str} ({num_completed}/{num_total}): {test_cases_str}",);
+            } else {
+                print!("\r{running_str}...");
+            }
+        }
+
+        io::stdout().flush().wrap_err("Failed to flush stdout")?;
+
+        if status.verdict.is_finished() {
+            println!("\n");
+
+            let num_accepted = status
+                .test_cases
+                .iter()
+                .filter(|tc| matches!(tc, TestCaseStatus::Accepted))
+                .count();
+            let num_total = status.test_cases.len();
+
+            let outcome = match status.verdict {
+                SubmissionStage::Accepted => "ok".bright_green().to_string(),
+                SubmissionStage::Rejected(reason) => {
+                    format!("{} ({reason})", "failed".bright_red())
+                }
+                _ => {
+                    eyre::bail!("Unreachable state was reached: finished without accepted/rejected")
+                }
+            };
+
+            let num_passed_str = if !status.test_cases.is_empty() {
+                format!(" {num_accepted}/{num_total} passed.")
+            } else {
+                "".to_string()
+            };
+
+            println!(
+                "Submission result: {outcome}.{num_passed_str} Time: {}.",
+                status.cpu_time
+            );
+
+            break;
+        }
+
+        sleep(REQUEST_INTERVAL_DURATION).await;
+    }
+
+    Ok(())
+}
+
+#[derive(Debug)]
+struct SubmissionStatus {
+    verdict: SubmissionStage,
+    test_cases: Vec<TestCaseStatus>,
+    cpu_time: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum TestCaseStatus {
     Accepted,
     Rejected(String),
     Unfinished,
 }
 
-async fn show_submission_status(
-    kc: &KattisClient,
-    creds: Credentials,
-    submission_url: &str,
-    login_url: &str,
-) -> Result<(), StdErr> {
-    let fail_reason_re = Regex::new(r"([\w ]+)$").unwrap();
-    let mut fail = None;
-    let mut num_passed;
-    let mut num_failed;
-    let mut runtime_str;
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum SubmissionStage {
+    Accepted,
+    Rejected(String),
+    BeforeTests(String),
+    RunningTests,
+}
 
-    loop {
-        // For some odd and godforsaken reason, we must log in before every request.
-        kc.login(creds.clone(), login_url).await?;
-        let res = kc.client.get(submission_url).send().await?;
+#[derive(Debug, Deserialize)]
+#[allow(unused)]
+struct SubmissionStatusResponse {
+    status_id: u64,
+    testcase_index: u64,
+    testdata_groups_html: String,
+    feedback_html: String,
+    judge_feedback_html: String,
+    row_html: String,
+}
 
-        let status = res.status();
-        if !status.is_success() {
-            return Err(format!(
-                "failed to fetch submission progress (http status code {})",
-                status
-            )
-            .into());
-        }
+async fn get_submission_status(app: &App, submission_id: &str) -> crate::Result<SubmissionStatus> {
+    let submission_url = make_submission_url(app, submission_id)?;
 
-        let html = match res.text().await {
-            Ok(h) => h,
-            Err(_) => return Err("failed to read submission progress response from kattis".into()),
-        };
+    let res = app
+        .client
+        .get(submission_url)
+        .query(&[("json", "")])
+        .send()
+        .await
+        .wrap_err("Failed to request submission status from Kattis")?;
 
-        let doc = Html::parse_document(&html);
+    let res_body = res
+        .json::<SubmissionStatusResponse>()
+        .await
+        .wrap_err("Failed to read submission status response from Kattis")?;
 
-        let status_selector = Selector::parse("td.status").unwrap();
-        let status_el = match doc.select(&status_selector).next() {
-            Some(s) => s,
-            None => return Err("failed to read submission status from kattis".into()),
-        };
-        let status = status_el.text().collect::<String>().to_lowercase();
+    SubmissionStatus::from_html(&res_body.row_html)
+        .wrap_err("Failed to parse submission status from Kattis")
+}
 
-        if status.contains("compile error") {
-            print!("\r");
-            io::stdout().flush().expect("failed to flush stdout");
+impl SubmissionStatus {
+    fn from_html(html_str: &str) -> crate::Result<Self> {
+        let html = Html::parse_document(html_str);
 
-            return Err("kattis could not compile your code".into());
-        }
+        let test_case_statuses: Vec<_> = html
+            .select(&Selector::parse(".testcase i.status-icon").unwrap())
+            .into_iter()
+            .map(|el| TestCaseStatus::from_test_case_icon_html(el.value()))
+            .collect();
 
-        if status.contains("new") || status.contains("compiling") {
-            print!("\r{}: {}", "status".bright_cyan(), &status);
-            io::stdout().flush().expect("failed to flush stdout");
-
-            thread::sleep(SLEEP_DURATION);
-            continue;
-        }
-
-        let runtime_selector = Selector::parse("td.runtime").unwrap();
-        runtime_str = doc
-            .select(&runtime_selector)
+        let verdict = html
+            .select(&Selector::parse("div.status").unwrap())
             .next()
-            .map(|el| el.text().collect::<String>().to_lowercase())
-            .unwrap_or_default();
+            .map(|el| el.text().collect::<String>())
+            .map(|s| SubmissionStage::from_string(&s))
+            .ok_or_else(|| eyre::eyre!("Failed to find submission stage"))?;
 
-        let test_selector = Selector::parse(".testcases > span").unwrap();
-        let mut tests = Vec::new();
-        num_passed = 0;
-        num_failed = 0;
+        // For some reason, the HTML library (html5ever under the hood) doesn't parse the `td`
+        // element correctly, so we just extract it ourselves.
+        let cpu_regex = Regex::new(
+            r#"<td data-type="cpu".*?>(?P<time>[\d\.]+).*?(&nbsp;|\w+)?(?P<unit>\w+)</td>"#,
+        )
+        .unwrap();
+        let cpu_time = cpu_regex
+            .captures(html_str)
+            .and_then(|c| {
+                let time = c.name("time")?.as_str();
+                let unit = c.name("unit")?.as_str();
+                Some(format!("{time}{unit}"))
+            })
+            .unwrap_or_else(|| "N/A".to_string());
 
-        for test_sel in doc.select(&test_selector) {
-            let test_el = test_sel.value();
-            let cs = CaseSensitivity::AsciiCaseInsensitive;
-            let test = if test_el.has_class("accepted", cs) {
-                num_passed += 1;
-                TestCase::Accepted
-            } else if test_el.has_class("rejected", cs) {
-                num_failed += 1;
+        Ok(Self {
+            verdict,
+            test_cases: test_case_statuses,
+            cpu_time,
+        })
+    }
+}
 
-                let reason = test_el
-                    .attr("title")
-                    .and_then(|t| fail_reason_re.captures(t))
-                    .and_then(|c| c.get(1))
-                    .map(|i| i.as_str().trim().to_lowercase())
-                    .unwrap_or_else(|| String::from("unknown"));
-                let rej = TestCase::Rejected(reason);
+impl TestCaseStatus {
+    fn from_test_case_icon_html(el: &Element) -> Self {
+        if has_class(el, "is-accepted") {
+            TestCaseStatus::Accepted
+        } else if has_class(el, "is-rejected") {
+            let reason = el
+                .attr("title")
+                .unwrap_or_default()
+                .split(':')
+                .last()
+                .unwrap_or_default()
+                .trim();
 
-                // We only show the first failure reason
-                if fail.is_none() {
-                    fail = Some(rej.clone());
-                }
-
-                rej
-            } else {
-                TestCase::Unfinished
-            };
-
-            tests.push(test);
+            TestCaseStatus::Rejected(reason.to_string())
+        } else {
+            TestCaseStatus::Unfinished
         }
+    }
+}
 
-        print!(
-            "\rRunning tests ... {} of {}: ",
-            num_passed + num_failed,
-            tests.len()
-        );
+impl SubmissionStage {
+    fn from_string(stage: &str) -> Self {
+        let stage = stage.trim().to_string();
 
-        for test in &tests {
-            let symbol = match test {
-                TestCase::Accepted => CHECKBOX,
-                TestCase::Rejected(_) => CROSSMARK,
-                TestCase::Unfinished => continue,
-            };
-
-            print!("{}", symbol);
+        match stage.to_lowercase().as_str() {
+            s if s.contains("running") => Self::RunningTests,
+            s if s.contains("new") || s.contains("compiling") => Self::BeforeTests(stage),
+            s if s.contains("accepted") => Self::Accepted,
+            _ => Self::Rejected(stage),
         }
-        io::stdout().flush().expect("failed to flush stdout");
-
-        if fail.is_some() {
-            break;
-        }
-
-        if num_passed + num_failed == tests.len() {
-            break;
-        }
-
-        thread::sleep(SLEEP_DURATION);
     }
 
-    let result_str = if fail.is_some() {
-        "failed".bright_red()
-    } else {
-        "ok".bright_green()
-    };
-    let suffix = fail
-        .and_then(|f| match f {
-            TestCase::Rejected(r) => Some(format!("\nreason: {}.", r.bright_red())),
-            _ => None,
-        })
-        .unwrap_or_default();
-    runtime_str.retain(|c| !c.is_whitespace());
+    fn is_finished(&self) -> bool {
+        matches!(self, Self::Accepted | Self::Rejected(_))
+    }
+}
 
-    println!(
-        "\n\nsubmission result: {}. {} passed; {} failed. {}.{}",
-        result_str, num_passed, num_failed, runtime_str, suffix
-    );
-
-    Ok(())
+fn has_class(el: &Element, class: &str) -> bool {
+    el.has_class(class, CaseSensitivity::AsciiCaseInsensitive)
 }

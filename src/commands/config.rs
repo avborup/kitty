@@ -1,31 +1,58 @@
-use crate::config::Config;
-use crate::StdErr;
-use clap::ArgMatches;
+use std::fs;
+
 use colored::Colorize;
+use eyre::Context;
 
-pub async fn config(cmd: &ArgMatches<'_>) -> Result<(), StdErr> {
-    if cmd.is_present("init") {
-        match Config::init() {
-            Ok(p) => {
-                let path = p.to_str().expect("path contained invalid unicode");
-                println!(
-                    "{} config directory at {}. you should place your .kattisrc and kitty.yml here",
-                    "initialised".bright_green(),
-                    path
-                );
-            }
-            Err(_) => return Err("failed to initialise config directory".into()),
+use crate::{
+    cli::{ConfigArgs, ConfigSubcommand},
+    config::{self, Config},
+    App,
+};
+
+pub async fn config(app: &App, config_args: &ConfigArgs) -> crate::Result<()> {
+    match &config_args.subcommand {
+        ConfigSubcommand::Init => {
+            init_config_files(app).wrap_err("Failed to initialise config files")
         }
-
-        return Ok(());
+        ConfigSubcommand::Location => {
+            show_config_location(app).wrap_err("Failed to load config location")
+        }
     }
+}
 
-    if cmd.is_present("location") {
-        let dir_path = Config::dir_path();
-        let path_str = dir_path.to_str().expect("path contained invalid unicode");
+fn init_config_files(_app: &App) -> crate::Result<()> {
+    fs::create_dir_all(Config::templates_dir_path())?;
 
-        println!("config directory path: {}", path_str.underline());
-    }
+    println!(
+        indoc::indoc! {"
+            Initialised config directory at {}.
+            You should place your .kattisrc and kitty.yml here."
+        },
+        Config::dir_path().display().to_string().underline()
+    );
+
+    Ok(())
+}
+
+fn show_config_location(_app: &App) -> crate::Result<()> {
+    let config_dir = config::Config::dir_path();
+
+    println!(
+        indoc::indoc! {"
+            Your config files should go in this directory:
+
+                {}
+
+            More specifically:
+             - Your .kattisrc file:   {}
+             - Your kitty.yml file:   {}
+             - Your templates folder: {}
+        "},
+        config_dir.display().to_string().underline(),
+        Config::kattisrc_path().display(),
+        Config::config_file_path().display(),
+        Config::templates_dir_path().display()
+    );
 
     Ok(())
 }

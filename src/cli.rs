@@ -1,149 +1,200 @@
-use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
+use std::path::PathBuf;
 
-pub fn init() -> App<'static, 'static> {
-    App::new("kitty")
-        .version(crate_version!())
-        .author(crate_authors!())
-        .about("A tool for interacting with Kattis via the command line")
-        .setting(AppSettings::GlobalVersion)
-        .setting(AppSettings::SubcommandRequired)
-        .subcommand(SubCommand::with_name("test")
-                    .about("Runs a solution through the official test cases")
-                    .setting(AppSettings::DisableVersion)
-                    .arg(Arg::with_name("PATH")
-                         .help("Path to problem directory")
-                         .default_value(".")
-                         .index(1))
-                    .arg(Arg::with_name("file")
-                         .short("f")
-                         .long("file")
-                         .takes_value(true)
-                         .help("Name of source file to test. Necessary when there are multiple valid sources or when the program cannot recognise the file extension"))
-                    .arg(Arg::with_name("language")
-                         .short("l")
-                         .long("lang")
-                         .takes_value(true)
-                         .help("Programming language of the solution. Write the typical file extension for the language (java for Java, py for python, js for JavaScript, etc.)."))
-                    .arg(Arg::with_name("time")
-                         .short("t")
-                         .long("time")
-                         .help("Display how long each test case took to execute"))
-                    .arg(Arg::with_name("fetch")
-                         .long("fetch")
-                         .help("If the test folder does not exist, download the test files from Kattis"))
-                    .arg(Arg::with_name("watch")
-                         .short("w")
-                         .long("watch")
-                         .help("Re-runs tests every time the source file changes"))
-                   )
-        .subcommand(SubCommand::with_name("get")
-                    .about("Fetches a problem from Kattis by creating a directory of the same name and downloading the official test cases")
-                    .after_help("You can create your own templates for your preferred programming languages. In kitty's config directory, create a \"templates\" subfolder, and inside that, create a file such as template.java in which you define your Java template.")
-                    .setting(AppSettings::DisableVersion)
-                    .arg(Arg::with_name("PROBLEM ID")
-                         .help("ID of the Kattis problem. You can find the id in the URL of the problem page on kattis: open.kattis.com/problems/<PROBLEM ID>")
-                         .required(true)
-                         .index(1))
-                    .arg(Arg::with_name("language")
-                         .short("l")
-                         .long("lang")
-                         .takes_value(true)
-                         .help("Programming language to use the template for. Write the typical file extension for the language (java for Java, py for python, js for JavaScript, etc.)."))
-                    .arg(Arg::with_name("no-domain")
-                         .short("n")
-                         .long("no-domain")
-                         .help("Removes the domain name when creating problem files"))
-                   )
-        .subcommand(SubCommand::with_name("submit")
-                    .about("Submits a solution to Kattis")
-                    .setting(AppSettings::DisableVersion)
-                    .arg(Arg::with_name("PATH")
-                         .help("Path to problem directory. Note that the directory name must match the problem id")
-                         .default_value(".")
-                         .index(1))
-                    .arg(Arg::with_name("file")
-                         .short("f")
-                         .long("file")
-                         .takes_value(true)
-                         .help("Name of source file to test. Necessary when there are multiple valid sources or when the program cannot recognise the file extension"))
-                    .arg(Arg::with_name("language")
-                         .short("l")
-                         .long("lang")
-                         .takes_value(true)
-                         .help("Programming language of the solution. Write the typical file extension for the language (java for Java, py for python, js for JavaScript, etc.)."))
-                    .arg(Arg::with_name("yes")
-                         .short("y")
-                         .long("yes")
-                         .help("Bypass the confirmation prompt by saying \"yes\" in advance"))
-                    .arg(Arg::with_name("open")
-                         .short("o")
-                         .long("open")
-                         .help("Open the submission on Kattis in your browser."))
-                   )
-        .subcommand(SubCommand::with_name("history")
-                    .about("Shows a list of your submissions to Kattis as seen on your profile page")
-                    .setting(AppSettings::DisableVersion)
-                    .arg(Arg::with_name("count")
-                         .short("c")
-                         .long("count")
-                         .help("How many submissions to show")
-                         .default_value("10"))
-                    .arg(Arg::with_name("all")
-                         .short("a")
-                         .long("all")
-                         .help("Show all submissions (if --count is present too, it is ignored)"))
-                   )
-        .subcommand(SubCommand::with_name("open")
-                    .about("Opens a problem in the browser")
-                    .setting(AppSettings::DisableVersion)
-                    .arg(Arg::with_name("PROBLEM ID")
-                         .help("The ID of the problem as seen in its URL. [default: the name of the current directory]")
-                         .index(1))
-                   )
-        .subcommand(SubCommand::with_name("random")
-                    .about("Randomly selects an untried problem from Kattis")
-                    .after_help("Note: Kattis displays problems 100 at a time as you can see by going to https://open.kattis.com/problems. That also means kitty cannot select a problem at random among every single Kattis problem - instead, kitty selects a random problem among the 100 shown ones. You can specify which 100 to show by passing the sorting options.")
-                    .setting(AppSettings::DisableVersion)
-                    .arg(Arg::with_name("sort")
-                         .short("s")
-                         .long("sort-by")
-                         .help("Choose which attribute to sort by")
-                         .possible_values(&["name", "total", "acc", "ratio", "fastest", "difficulty"])
-                         .default_value("name"))
-                    .arg(Arg::with_name("direction")
-                         .short("d")
-                         .long("direction")
-                         .help("Direction to sort")
-                         .possible_values(&["asc", "desc"])
-                         .default_value("asc"))
-                    .arg(Arg::with_name("yes")
-                         .short("y")
-                         .long("yes")
-                         .help("Skip the prompt asking if you want to fetch the problem, saying \"yes\" in advance"))
-                    .arg(Arg::with_name("language")
-                         .short("l")
-                         .long("lang")
-                         .takes_value(true)
-                         .help("Same as the language argument for the get command"))
-                   )
-        .subcommand(SubCommand::with_name("config")
-                    .about("Configures kitty")
-                    .setting(AppSettings::DisableVersion)
-                    .arg(Arg::with_name("init")
-                         .long("init")
-                         .help("Creates the kitty config directory in the correct location and shows where it is. If this is provided, all other arguments are ignored"))
-                    .arg(Arg::with_name("location")
-                         .long("location")
-                         .help("Shows where the kitty config directory is or should be located"))
-                   )
-        .subcommand(SubCommand::with_name("langs")
-                    .about("Displays all the languages supported by kitty")
-                    .setting(AppSettings::DisableVersion)
-                    .after_help("Whenever you need to provide a language as an argument to kitty (for example --lang when fetching commands), provide its extension exactly as shown in the output of this command.")
-                   )
-        .subcommand(SubCommand::with_name("update")
-                    .about("Updates the local installation of kitty")
-                    .setting(AppSettings::DisableVersion)
-                    .after_help("The currently installed binary will be replaced with the one at https://github.com/KongBorup/kitty/releases/latest")
-                   )
+use clap::{Args, Parser, Subcommand};
+
+pub fn parse_args() -> KittyArgs {
+    KittyArgs::parse()
+}
+
+/// A tool for interacting with Kattis via the command line
+#[derive(Parser, Debug)]
+#[command(author, version, about)]
+pub struct KittyArgs {
+    /// Enables verbose output
+    #[arg(short, long, default_value_t = false, global = true)]
+    pub verbose: bool,
+
+    #[command(subcommand)]
+    pub subcommand: KittySubcommand,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum KittySubcommand {
+    Config(ConfigArgs),
+    Get(GetArgs),
+    Open(OpenArgs),
+    Submit(SubmitArgs),
+    Test(TestArgs),
+
+    /// List all the languages you can use kitty with based on your config file
+    ///
+    /// Whenever you need to provide a language as an argument to kitty (for
+    /// example --lang when running tests), provide its extension exactly as
+    /// shown in the output of this command.
+    Langs,
+
+    /// Updates kitty to the latest version
+    ///
+    /// The currently installed binary will be replaced with the one at
+    /// https://github.com/avborup/kitty/releases/latest
+    ///
+    /// If no binary is found for your architecture and/or operating system,
+    /// please open an issue on kitty's GitHub repository! Alternatively, you
+    /// can manage the kitty installation yourself via cargo.
+    Update,
+}
+
+/// A utility to help you configure kitty
+///
+/// Kitty needs a few files to work properly. These include:
+///
+///  - A .kattisrc file, which you can download from https://open.kattis.com/download/kattisrc.
+///    This file is used to authenticate you with Kattis, and it controls which
+///    URLs kitty uses to interact with Kattis.
+///
+///  - A kitty.yml file, which is used to configure kitty's behaviour. This is
+///    where you can configure which programming languages you can use, which
+///    commands are run, and similar.
+///
+///  - A templates directory, which contains templates that kitty can auto-copy
+///    when you fetch new problems.
+#[derive(Args, Debug)]
+pub struct ConfigArgs {
+    #[command(subcommand)]
+    pub subcommand: ConfigSubcommand,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum ConfigSubcommand {
+    /// Creates the kitty config directory for you in the correct location and
+    /// shows where it is.
+    Init,
+
+    /// Shows where the kitty config directory is or should be located
+    Location,
+}
+
+/// Fetches a problem from Kattis by creating a solution folder of the same name
+/// and downloading the official test cases. If you have defined a template, it
+/// will be copied into your solution folder.
+///
+/// You can create your own templates for your preferred programming languages.
+/// In kitty's config directory, create a 'templates' subfolder, and inside that,
+/// create a file such as template.java in which you define your Java template.
+#[derive(Args, Debug)]
+pub struct GetArgs {
+    /// The ID of the problem to fetch from Kattis.
+    ///
+    /// You can find the id in the URL of the problem page on kattis:
+    /// open.kattis.com/problems/<PROBLEM ID>
+    pub problem_id: String,
+
+    /// If present, remove the host name from the problem ID in templates.
+    ///
+    /// If the problem ID has a host prefix, this flag will remove it when
+    /// inserting the ID into a template. For example, 'itu.flights' becomes
+    /// just 'flights'.
+    #[arg(short, long, default_value_t = false)]
+    pub no_domain: bool,
+
+    /// Programming language to use the template for.
+    ///
+    /// Write the file extension for the language (java for Java, py for python,
+    /// js for JavaScript, etc.).
+    #[arg(short, long)]
+    pub lang: Option<String>,
+}
+
+/// Runs a solution through the test cases
+///
+/// Test cases are located in the 'test' folder within your solution folder.
+/// Initially, tests are simply the official test cases from Kattis, but you can
+/// add as many test files as you want.
+///
+/// For each .in (input) file, the file's content is piped into your solution,
+/// and your solution's output is compared to the corresponding .ans (answer)
+/// file.
+///
+/// If your solution exits with a non-zero code, it is considered a runtime
+/// error.
+#[derive(Args, Debug)]
+pub struct TestArgs {
+    /// The path to the solution folder you want to test
+    #[arg(default_value = ".")]
+    pub path: PathBuf,
+
+    /// Path to the solution file to test.
+    ///
+    /// Useful when there are multiple valid files in the solution folder, if
+    /// the file doesn't match one of your defined languages, or if the file is
+    /// located somewhere else.
+    #[arg(short, long)]
+    pub file: Option<PathBuf>,
+
+    /// Programming language to use for the solution.
+    ///
+    /// Useful when the file has another file extension than the one you defined
+    /// for the language.
+    ///
+    /// Write the file extension for the language (java for Java, py for python,
+    /// js for JavaScript, etc.).
+    #[arg(short, long)]
+    pub lang: Option<String>,
+
+    /// If the test folder does not exist, download the test files from Kattis
+    #[arg(long, default_value_t = false)]
+    pub fetch: bool,
+
+    /// Display how long each test case takes to execute.
+    #[arg(short, long, default_value_t = false)]
+    pub time: bool,
+
+    /// Re-runs tests every time the source file changes.
+    #[arg(short, long, default_value_t = false)]
+    pub watch: bool,
+}
+
+/// Opens a problem in the browser
+#[derive(Args, Debug)]
+pub struct OpenArgs {
+    /// The ID of the problem as seen in its URL. Defaults to the name of the
+    /// current directory.
+    pub problem_id: Option<String>,
+}
+
+/// Submits a solution to Kattis
+#[derive(Args, Debug)]
+pub struct SubmitArgs {
+    /// The path to the solution folder you want to submit.
+    ///
+    /// The name of the folder is used as the problem ID when submitting to
+    /// Kattis.
+    #[arg(default_value = ".")]
+    pub path: PathBuf,
+
+    /// Path to the solution file to submit.
+    ///
+    /// Useful when there are multiple valid files in the solution folder, if
+    /// the file doesn't match one of your defined languages, or if the file is
+    /// located somewhere else.
+    #[arg(short, long)]
+    pub file: Option<PathBuf>,
+
+    /// Programming language to use for the solution.
+    ///
+    /// Useful when the file has another file extension than the one you defined
+    /// for the language.
+    ///
+    /// Write the file extension for the language (java for Java, py for python,
+    /// js for JavaScript, etc.).
+    #[arg(short, long)]
+    pub lang: Option<String>,
+
+    /// Bypass the confirmation prompt by saying yes in advance.
+    #[arg(short, long, default_value_t = false)]
+    pub yes: bool,
+
+    /// Open the submission on Kattis in your browser.
+    #[arg(short, long, default_value_t = false)]
+    pub open: bool,
 }

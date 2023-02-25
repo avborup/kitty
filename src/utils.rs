@@ -1,30 +1,44 @@
 use std::{
+    env,
     io::{self, Write},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
-pub fn path_to_str(path: &Path) -> String {
-    let path_str = path
+use eyre::Context;
+
+pub fn get_full_path(path: impl AsRef<Path>) -> crate::Result<PathBuf> {
+    let path = path.as_ref();
+
+    if path.is_absolute() {
+        Ok(path.to_path_buf())
+    } else {
+        Ok(env::current_dir()?.join(path))
+    }
+}
+
+pub fn resolve_and_get_file_name(path: impl AsRef<Path>) -> crate::Result<String> {
+    let file_name = path
+        .as_ref()
+        .canonicalize()?
+        .file_name()
+        .ok_or_else(|| eyre::eyre!("Could not read file name"))?
         .to_str()
-        .expect("path contained invalid unicode")
+        .ok_or_else(|| eyre::eyre!("Could not convert file name to string"))?
         .to_string();
 
-    #[cfg(windows)]
-    let path_str = path_str.replace(r"\", r"\\");
-
-    path_str
+    Ok(file_name)
 }
 
 /// Prompts the user in the terminal with a yes/no question. Returns `true` when
 /// the user responds "y", `false` otherwise.
-pub fn prompt_bool(question: &str) -> bool {
-    print!("{} (y/n): ", question);
-    io::stdout().flush().expect("failed to flush stdout");
+pub fn prompt_bool(question: &str) -> crate::Result<bool> {
+    print!("{question} (y/n): ");
+    io::stdout().flush().wrap_err("failed to flush stdout")?;
 
     let mut input = String::new();
     io::stdin()
         .read_line(&mut input)
-        .expect("failed to read input");
+        .wrap_err("failed to read input")?;
 
-    input.trim().to_lowercase() == "y"
+    Ok(input.trim().to_lowercase() == "y")
 }

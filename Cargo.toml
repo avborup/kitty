@@ -1,25 +1,42 @@
 [package]
 name = "kitty"
-version = "0.7.0"
+version = "0.8.0"
 authors = ["Adrian Borup <adrian@borup.com>"]
-edition = "2018"
+edition = "2021"
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
+codegen-units = 1
 
 [dependencies]
-clap = "2.33.3"
-colored = "2.0.0"
-reqwest = { version = "0.10.8", features = ["cookies"] }
-tokio = { version = "0.2.22", features = ["macros"] }
-tempfile = "3.1.0"
-zip = "0.5.8"
-platform-dirs = "0.3.0"
-rust-ini = "0.16.0"
-regex = "1.4.1"
-scraper = "0.12.0"
-selectors = "0.22.0"
-webbrowser = "0.5.5"
-rand = "0.7.3"
-self_update = "0.23.0"
+clap = { version = "4", features = ["derive"] }
+color-eyre = "0.6"
+eyre = "0.6"
+platform-dirs = "0.3"
+rust-ini = "0.18"
+secrecy = "0.8"
 yaml-rust = "0.4"
-lazy_static = "1.4"
+indoc = "2"
+reqwest = { version = "0.11", features = ["multipart", "cookies", "json"] }
+tokio = { version = "1.25", features = ["full"] }
+regex = "1.7"
+colored = "2.0"
+tempfile = "3"
+zip = "0.6"
 shlex = "1.1"
-notify = "4.0"
+notify = "5.1"
+webbrowser = "0.8"
+serde = { version = "1", features = ["derive"] }
+scraper = "0.14"
+selectors = "0.22"
+self_update = "0.36"
+
+[dev-dependencies]
+dockertest = "0.3"
+bollard = "0.13"
+futures-util = "0.3"
+strip-ansi-escapes = "0.1"
+dotenv = "0.15"
+serial_test = "1.0"
