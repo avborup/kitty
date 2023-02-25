@@ -42,10 +42,6 @@ jobs:
       - name: Build binary
         run: cargo +nightly build --release --target ${{ matrix.target }} --out-dir kitty-artifacts -Z unstable-options
 
-      - name: Strip binary
-        if: runner.os == 'Linux' || runner.os == 'macOS'
-        run: strip kitty-artifacts/kitty${{ matrix.exe_ext }}
-
       - name: Upload binary to release
         uses: svenstaro/upload-release-action@v1-release
         with:
