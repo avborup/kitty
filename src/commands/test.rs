@@ -9,6 +9,7 @@ use std::{
 use colored::Colorize;
 use eyre::{bail, Context};
 use notify::{event::ModifyKind, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+use regex::Regex;
 
 use crate::{
     cli::TestArgs,
@@ -60,7 +61,15 @@ fn run_tests(
         run_compile_cmd(app, compile_cmd)?;
     }
 
-    let test_cases = get_test_cases(&solution.dir)?;
+    let mut test_cases = get_test_cases(&solution.dir)?;
+
+    if let Some(filter) = &args.filter {
+        let regex_filter = Regex::new(filter)
+            .wrap_err("The given test case filter was an invalid regular expression")?;
+
+        test_cases.retain(|test_case| regex_filter.is_match(&test_case.name));
+    }
+
     let mut num_failed_tests = 0;
 
     println!("Running {} tests\n", test_cases.len());

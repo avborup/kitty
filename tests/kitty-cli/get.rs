@@ -16,7 +16,7 @@ fn creates_folders_and_downloads_tests() {
 
             env.run("kitty get quadrant")
                 .await
-                .assert(StdOut, contains("created solution folder for quadrant"));
+                .assert(StdOut, contains("Created solution folder for quadrant"));
 
             env.run("ls").await.assert(StdOut, contains("quadrant"));
 

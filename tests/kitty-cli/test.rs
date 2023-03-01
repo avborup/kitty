@@ -179,3 +179,48 @@ fn language_override_works() {
         .boxed()
     }));
 }
+
+#[test]
+fn filter_only_runs_matching_tests() {
+    run_with_sandbox(Box::new(|env| {
+        async move {
+            make_standard_setup(&env).await;
+
+            env.copy("./tests/kitty-cli/data/quadrant", "/work/quadrant");
+
+            env.run("cd quadrant/test && cp 1.in custom01.in").await;
+            env.run("cd quadrant/test && cp 1.ans custom01.ans").await;
+            env.run("cd quadrant/test && cp 2.in custom02.in").await;
+            env.run("cd quadrant/test && cp 2.ans custom02.ans").await;
+
+            env.run("cd quadrant && kitty test --filter 1")
+                .await
+                .assert(
+                    StdOut,
+                    contains(indoc::indoc! {r#"
+                        Running 2 tests
+
+                        test 1 ... ✅
+                        test custom01 ... ✅
+
+                        Test result: ok. 2 passed; 0 failed.
+                    "#}),
+                );
+
+            env.run("cd quadrant && kitty test --filter '^custom'")
+                .await
+                .assert(
+                    StdOut,
+                    contains(indoc::indoc! {r#"
+                        Running 2 tests
+
+                        test custom01 ... ✅
+                        test custom02 ... ✅
+
+                        Test result: ok. 2 passed; 0 failed.
+                    "#}),
+                );
+        }
+        .boxed()
+    }));
+}
