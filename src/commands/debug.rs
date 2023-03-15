@@ -149,7 +149,7 @@ fn run_with_generators(
         })
         .transpose()?;
 
-    let test_case = TestCaseViaGenerator {
+    let test_case = GeneratorTestCase {
         app,
         input_generator_run_cmd: input_gen_exec_cmds.run_cmd(),
         answer_generator_run_cmd: answer_validator_run_cmd.as_deref(),
@@ -185,13 +185,13 @@ fn run_with_generators(
     Ok(Ok(GeneratorSuccess { execution_time }))
 }
 
-struct TestCaseViaGenerator<'a> {
+struct GeneratorTestCase<'a> {
     app: &'a App,
     input_generator_run_cmd: &'a [String],
     answer_generator_run_cmd: Option<&'a [String]>,
 }
 
-impl TestCaseIO for TestCaseViaGenerator<'_> {
+impl TestCaseIO for GeneratorTestCase<'_> {
     type Input<'a> = io::Cursor<Vec<u8>> where Self: 'a;
     type Answer<'a> = io::Cursor<Vec<u8>> where Self: 'a;
 

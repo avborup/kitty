@@ -9,7 +9,7 @@ use color_eyre::owo_colors::OwoColorize;
 use eyre::Context;
 
 use crate::{
-    commands::test::TestCaseViaFile,
+    commands::test::FileTestCase,
     config::language::Language,
     utils::{get_full_path, resolve_and_get_file_name},
     App,
@@ -127,7 +127,7 @@ pub fn get_all_files_with_known_extension(
     Ok(options)
 }
 
-pub fn get_test_cases(solution_dir: impl AsRef<Path>) -> crate::Result<Vec<TestCaseViaFile>> {
+pub fn get_test_cases(solution_dir: impl AsRef<Path>) -> crate::Result<Vec<FileTestCase>> {
     let test_dir_files = get_test_dir(solution_dir)
         .read_dir()
         .wrap_err("Failed to read test case folder")?
@@ -165,13 +165,11 @@ pub fn get_test_cases(solution_dir: impl AsRef<Path>) -> crate::Result<Vec<TestC
     let test_files = input_files
         .into_iter()
         .filter_map(|(name, input_file)| {
-            answer_files
-                .remove(&name)
-                .map(|answer_file| TestCaseViaFile {
-                    name,
-                    input_file,
-                    answer_file,
-                })
+            answer_files.remove(&name).map(|answer_file| FileTestCase {
+                name,
+                input_file,
+                answer_file,
+            })
         })
         .collect();
 

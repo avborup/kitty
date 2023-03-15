@@ -186,13 +186,13 @@ pub trait TestCaseIO {
         R: Read;
 }
 
-pub struct TestCaseViaFile {
+pub struct FileTestCase {
     pub name: String,
     pub input_file: PathBuf,
     pub answer_file: PathBuf,
 }
 
-impl TestCaseIO for TestCaseViaFile {
+impl TestCaseIO for FileTestCase {
     type Input<'a> = File;
     type Answer<'a> = File;
 
