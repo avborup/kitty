@@ -7,6 +7,7 @@ mod config;
 mod kattis_client;
 mod problem;
 mod solution;
+mod test_io;
 mod utils;
 
 pub type Result<T> = eyre::Result<T>;

@@ -9,8 +9,8 @@ use color_eyre::owo_colors::OwoColorize;
 use eyre::Context;
 
 use crate::{
-    commands::test::FileTestCase,
     config::language::Language,
+    test_io::FileTestCase,
     utils::{get_full_path, resolve_and_get_file_name},
     App,
 };

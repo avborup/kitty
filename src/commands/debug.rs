@@ -10,17 +10,13 @@ use eyre::{bail, Context};
 
 use crate::{
     cli::{DebugAnswerArgs, DebugArgs, DebugInputArgs, DebugSubcommand},
-    commands::test::{
-        print_test_case_error, run_compile_cmd, run_test, run_with_input, TestCaseError, FAILURE,
-        SUCCESS,
-    },
+    commands::test::{FAILURE, SUCCESS},
     config::language::Language,
     solution::{get_all_files_with_known_extension, get_debug_dir, Solution, SolutionOptions},
+    test_io::{run_compile_cmd, run_test, run_with_input, TestCaseError, TestCaseIO},
     utils::{resolve_and_get_file_name, RunningAverager, TimedPrinter},
     App,
 };
-
-use super::test::TestCaseIO;
 
 // TODO: Only compile generators and solution once
 pub async fn debug(app: &App, args: &DebugArgs) -> crate::Result<()> {
@@ -61,7 +57,7 @@ pub async fn debug(app: &App, args: &DebugArgs) -> crate::Result<()> {
         if let Err(failure) = outcome {
             println!("{FAILURE}\n");
 
-            print_test_case_error(&failure.test_case_error);
+            failure.test_case_error.print();
 
             println!("{}:", "Input".bright_red());
             println!("{}\n", failure.test_case_error.input().trim_end());
