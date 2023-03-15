@@ -19,8 +19,8 @@ pub trait TestCaseIO {
     where
         Self: 'a;
 
-    fn input<'a>(&'a self) -> crate::Result<Self::Input<'a>>;
-    fn answer<'a, R>(&'a self, input: Option<R>) -> crate::Result<Self::Answer<'a>>
+    fn input(&self) -> crate::Result<Self::Input<'_>>;
+    fn answer<R>(&self, input: Option<R>) -> crate::Result<Self::Answer<'_>>
     where
         R: Read;
 }
@@ -173,11 +173,11 @@ impl TestCaseIO for FileTestCase {
     type Input<'a> = File;
     type Answer<'a> = File;
 
-    fn input<'a>(&'a self) -> crate::Result<Self::Input<'a>> {
+    fn input(&self) -> crate::Result<Self::Input<'_>> {
         File::open(&self.input_file).wrap_err("Failed to open input file")
     }
 
-    fn answer<'a, R: Read>(&'a self, _input: Option<R>) -> crate::Result<Self::Answer<'a>> {
+    fn answer<R: Read>(&self, _input: Option<R>) -> crate::Result<Self::Answer<'_>> {
         File::open(&self.answer_file).wrap_err("Failed to open answer file")
     }
 }

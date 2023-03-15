@@ -118,7 +118,7 @@ fn run_with_generators(
     )?;
 
     let input_gen_exec_cmds =
-        input_generator_lang.get_program_execution_commands(&input_generator_path)?;
+        input_generator_lang.get_program_execution_commands(input_generator_path)?;
 
     if let Some(compile_cmd) = input_gen_exec_cmds.compile_cmd() {
         run_compile_cmd(app, compile_cmd).wrap_err("Failed to compile your input generator")?;
@@ -134,7 +134,7 @@ fn run_with_generators(
             )?;
 
             let answer_validator_exec_cmds =
-                answer_validator_lang.get_program_execution_commands(&answer_validator_path)?;
+                answer_validator_lang.get_program_execution_commands(answer_validator_path)?;
 
             if let Some(compile_cmd) = answer_validator_exec_cmds.compile_cmd() {
                 run_compile_cmd(app, compile_cmd)
@@ -191,16 +191,16 @@ impl TestCaseIO for GeneratorTestCase<'_> {
     type Input<'a> = io::Cursor<Vec<u8>> where Self: 'a;
     type Answer<'a> = io::Cursor<Vec<u8>> where Self: 'a;
 
-    fn input<'a>(&'a self) -> crate::Result<Self::Input<'a>> {
+    fn input(&self) -> crate::Result<Self::Input<'_>> {
         let input_generator_output =
-            run_with_input(self.app, &self.input_generator_run_cmd, &mut io::empty())?;
+            run_with_input(self.app, self.input_generator_run_cmd, &mut io::empty())?;
 
         fail_if_output_is_not_success("input", &input_generator_output)?;
 
         Ok(io::Cursor::new(input_generator_output.stdout))
     }
 
-    fn answer<'a, R: Read>(&'a self, input: Option<R>) -> crate::Result<Self::Answer<'a>> {
+    fn answer<R: Read>(&self, input: Option<R>) -> crate::Result<Self::Answer<'_>> {
         let answer_generator_run_cmd = match self.answer_generator_run_cmd {
             Some(answer_generator_run_cmd) => answer_generator_run_cmd,
             None => return Ok(io::Cursor::new(Vec::new())),
@@ -274,7 +274,7 @@ fn resolve_generator_file_to_use(
 
         return Ok((
             file_path.to_path_buf(),
-            app.config.try_lang_from_file(&file_path)?,
+            app.config.try_lang_from_file(file_path)?,
         ));
     }
 
@@ -282,7 +282,7 @@ fn resolve_generator_file_to_use(
     let options = get_all_files_with_known_extension(app, debug_dir)?
         .into_iter()
         .filter(|path| {
-            resolve_and_get_file_name(&path)
+            resolve_and_get_file_name(path)
                 .map(|file_name| file_name.contains(name))
                 .unwrap_or(false)
         })
@@ -295,7 +295,7 @@ fn resolve_generator_file_to_use(
     );
 
     if let [file] = options.as_slice() {
-        return Ok((file.clone(), app.config.try_lang_from_file(&file)?));
+        return Ok((file.clone(), app.config.try_lang_from_file(file)?));
     }
 
     eyre::bail!("Multiple {name} generator files found. Specify which file to use.");
