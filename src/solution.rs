@@ -9,6 +9,7 @@ use color_eyre::owo_colors::OwoColorize;
 use eyre::Context;
 
 use crate::{
+    commands::test::TestCaseViaFile,
     config::language::Language,
     utils::{get_full_path, resolve_and_get_file_name},
     App,
@@ -68,6 +69,10 @@ pub fn get_test_dir(solution_dir: impl AsRef<Path>) -> PathBuf {
     solution_dir.as_ref().join("test")
 }
 
+pub fn get_debug_dir(solution_dir: impl AsRef<Path>) -> PathBuf {
+    solution_dir.as_ref().join("debug")
+}
+
 fn resolve_solution_file_to_use(
     app: &App,
     solution_dir: impl AsRef<Path>,
@@ -101,7 +106,7 @@ fn resolve_solution_file_to_use(
     eyre::bail!("Multiple solution files found. Specify which file to use with the --file option.");
 }
 
-fn get_all_files_with_known_extension(
+pub fn get_all_files_with_known_extension(
     app: &App,
     folder: impl AsRef<Path>,
 ) -> crate::Result<Vec<PathBuf>> {
@@ -122,13 +127,7 @@ fn get_all_files_with_known_extension(
     Ok(options)
 }
 
-pub struct TestCase {
-    pub name: String,
-    pub input_file: PathBuf,
-    pub answer_file: PathBuf,
-}
-
-pub fn get_test_cases(solution_dir: impl AsRef<Path>) -> crate::Result<Vec<TestCase>> {
+pub fn get_test_cases(solution_dir: impl AsRef<Path>) -> crate::Result<Vec<TestCaseViaFile>> {
     let test_dir_files = get_test_dir(solution_dir)
         .read_dir()
         .wrap_err("Failed to read test case folder")?
@@ -166,11 +165,13 @@ pub fn get_test_cases(solution_dir: impl AsRef<Path>) -> crate::Result<Vec<TestC
     let test_files = input_files
         .into_iter()
         .filter_map(|(name, input_file)| {
-            answer_files.remove(&name).map(|answer_file| TestCase {
-                name,
-                input_file,
-                answer_file,
-            })
+            answer_files
+                .remove(&name)
+                .map(|answer_file| TestCaseViaFile {
+                    name,
+                    input_file,
+                    answer_file,
+                })
         })
         .collect();
 

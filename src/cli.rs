@@ -21,6 +21,7 @@ pub struct KittyArgs {
 #[derive(Subcommand, Debug)]
 pub enum KittySubcommand {
     Config(ConfigArgs),
+    Debug(DebugArgs),
     Get(GetArgs),
     Open(OpenArgs),
     Submit(SubmitArgs),
@@ -214,4 +215,83 @@ pub struct SubmitArgs {
     /// Open the submission on Kattis in your browser.
     #[arg(short, long, default_value_t = false)]
     pub open: bool,
+}
+
+/// Instead of using the static test files in the test folder, use custom
+/// programs to generate input for your solution and to verify your solution's
+/// output.
+#[derive(Args, Debug)]
+pub struct DebugArgs {
+    #[command(subcommand)]
+    pub subcommand: DebugSubcommand,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum DebugSubcommand {
+    Input(DebugInputArgs),
+    Answer(DebugAnswerArgs),
+}
+
+/// Instead of using the static test files in the test folder, use a generator
+/// program to generate input for your solution. Your generator's stdout will be
+/// piped into your solution's stdin.
+///
+/// The 'input' command is mostly useful for detecting runtime errors or to see
+/// how your solution scales with large inputs. See the 'answer' command for how
+/// to validate your solution's output.
+///
+/// The generator should be located in the 'debug' subfolder of your solution
+/// folder. By default, the file named 'input' will be used (for example
+/// 'input.py').
+///
+/// The input generator program can be written in any language you have defined
+/// in your config file, just like with the test command.
+#[derive(Args, Debug)]
+pub struct DebugInputArgs {
+    /// The path to the solution folder you want to test
+    #[arg(default_value = ".")]
+    pub path: PathBuf,
+
+    /// Path to the solution file to test.
+    ///
+    /// See the test command for more.
+    #[arg(short, long)]
+    pub file: Option<PathBuf>,
+
+    /// Programming language to use for the solution.
+    ///
+    /// See the test command for more.
+    #[arg(short, long)]
+    pub lang: Option<String>,
+
+    /// The path to the input generator file. By default the file named
+    /// 'input' will be used (for example 'input.py').
+    #[arg(short, long = "input-generator")]
+    pub input_generator_path: Option<PathBuf>,
+
+    /// The number of test cases to generate and execute.
+    #[arg(short, long, default_value = "100")]
+    pub num_tests: usize,
+}
+
+/// For cases where you can write a solution that is correct but too slow for
+/// Kattis, you can use this solution to check that your new solution outputs
+/// the same as the old solution.
+///
+/// The 'answer' command uses the input generator described in the 'input'
+/// command's help text. The same input will be piped into your solution and the
+/// answer validator, and then the two programs' output will be compared.
+///
+/// The output validator should be located in the 'debug' subfolder of your
+/// solution folder. By default, the file named 'answer' will be used (for
+/// example 'answer.py').
+#[derive(Args, Debug)]
+pub struct DebugAnswerArgs {
+    #[command(flatten)]
+    pub input_args: DebugInputArgs,
+
+    /// The path to the answer validator file. By default the file named
+    /// 'answer' will be used (for example 'answer.py').
+    #[arg(short, long = "answer-validator")]
+    pub answer_validator_path: Option<PathBuf>,
 }

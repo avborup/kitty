@@ -99,6 +99,11 @@ impl Config {
         Ok(self.lang_from_file_ext(ext))
     }
 
+    pub fn try_lang_from_file(&self, file: impl AsRef<Path>) -> crate::Result<&Language> {
+        self.lang_from_file(file)?
+            .ok_or_else(|| eyre::eyre!("Couldn't recognise the language from the file extension"))
+    }
+
     pub fn default_language(&self) -> Option<&Language> {
         self.default_language
             .as_ref()

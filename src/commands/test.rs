@@ -1,8 +1,8 @@
 use std::{
-    fs::{self, File},
-    io::{self, stdout, Write},
-    path::Path,
-    process::Command,
+    fs::File,
+    io::{self, stdout, Read, Write},
+    path::{Path, PathBuf},
+    process::{self, Command, Stdio},
     time::Instant,
 };
 
@@ -14,13 +14,13 @@ use regex::Regex;
 use crate::{
     cli::TestArgs,
     config::language::ExecuteProgramCommands,
-    solution::{get_test_cases, get_test_dir, Solution, SolutionOptions, TestCase},
+    solution::{get_test_cases, get_test_dir, Solution, SolutionOptions},
     utils::prompt_bool,
     App,
 };
 
-const SUCCESS: &str = "✅";
-const FAILURE: &str = "❌";
+pub const SUCCESS: &str = "✅";
+pub const FAILURE: &str = "❌";
 
 pub async fn test(app: &App, args: &TestArgs) -> crate::Result<()> {
     let solution = Solution::from_folder(
@@ -94,21 +94,8 @@ fn run_tests(
 
         println!();
 
-        match outcome {
-            Ok(_) => {}
-            Err(TestCaseError::WrongAnswer { expected, actual }) => {
-                println!("{}", "Expected:".underline());
-                println!("{expected}\n");
-                println!("{}", "Actual:".underline());
-                println!("{actual}\n");
-            }
-            Err(TestCaseError::RuntimeError { stdout, stderr }) => {
-                println!("{}:", "Runtime error".bright_red());
-                if !stdout.is_empty() {
-                    println!("{stdout}");
-                }
-                println!("{stderr}\n");
-            }
+        if let Err(test_case_error) = outcome {
+            print_test_case_error(&test_case_error);
         }
     }
 
@@ -126,14 +113,128 @@ fn run_tests(
     Ok(())
 }
 
-type TestCaseResult = Result<(), TestCaseError>;
+pub fn run_test<'a, T: TestCaseIO + 'a>(
+    app: &App,
+    run_cmd: &[String],
+    test_case: &'a T,
+) -> crate::Result<TestCaseResult>
+where
+    <T as TestCaseIO>::Input<'a>: Read,
+    <T as TestCaseIO>::Answer<'a>: Read,
+{
+    let input = test_case.input()?;
+    let input = io::read_to_string(input).wrap_err("Failed to load input")?;
 
-enum TestCaseError {
-    WrongAnswer { expected: String, actual: String },
-    RuntimeError { stdout: String, stderr: String },
+    let expected_answer = test_case.answer(Some(input.as_bytes()))?;
+    let expected_answer =
+        io::read_to_string(expected_answer).wrap_err("Failed to load expected answer")?;
+
+    let output = run_with_input(app, run_cmd, &mut input.as_bytes())?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+    if !output.status.success() {
+        return Ok(Err(TestCaseError::RuntimeError {
+            input,
+            stdout,
+            stderr,
+        }));
+    }
+
+    if !are_equal_after_normalisation(&stdout, &expected_answer) {
+        return Ok(Err(TestCaseError::WrongAnswer {
+            input,
+            expected: expected_answer.trim_end().to_string(),
+            actual: stdout.trim_end().to_string(),
+        }));
+    }
+
+    Ok(Ok(()))
 }
 
-fn run_test(app: &App, run_cmd: &[String], test_case: &TestCase) -> crate::Result<TestCaseResult> {
+pub fn print_test_case_error(err: &TestCaseError) {
+    match err {
+        TestCaseError::WrongAnswer {
+            expected, actual, ..
+        } => {
+            println!("{}", "Expected:".underline());
+            println!("{}\n", expected.trim_end());
+            println!("{}", "Actual:".underline());
+            println!("{}\n", actual.trim_end());
+        }
+        TestCaseError::RuntimeError { stdout, stderr, .. } => {
+            println!("{}:", "Runtime error".bright_red());
+            println!("{}", stdout.trim_end());
+            println!("{}\n", stderr.trim_end());
+        }
+    }
+}
+
+pub trait TestCaseIO {
+    type Input<'a>
+    where
+        Self: 'a;
+
+    type Answer<'a>
+    where
+        Self: 'a;
+
+    fn input<'a>(&'a self) -> crate::Result<Self::Input<'a>>;
+    fn answer<'a, R>(&'a self, input: Option<R>) -> crate::Result<Self::Answer<'a>>
+    where
+        R: Read;
+}
+
+pub struct TestCaseViaFile {
+    pub name: String,
+    pub input_file: PathBuf,
+    pub answer_file: PathBuf,
+}
+
+impl TestCaseIO for TestCaseViaFile {
+    type Input<'a> = File;
+    type Answer<'a> = File;
+
+    fn input<'a>(&'a self) -> crate::Result<Self::Input<'a>> {
+        File::open(&self.input_file).wrap_err("Failed to open input file")
+    }
+
+    fn answer<'a, R: Read>(&'a self, _input: Option<R>) -> crate::Result<Self::Answer<'a>> {
+        File::open(&self.answer_file).wrap_err("Failed to open answer file")
+    }
+}
+
+pub type TestCaseResult = Result<(), TestCaseError>;
+
+#[derive(Debug)]
+pub enum TestCaseError {
+    WrongAnswer {
+        input: String,
+        expected: String,
+        actual: String,
+    },
+    RuntimeError {
+        input: String,
+        stdout: String,
+        stderr: String,
+    },
+}
+
+impl TestCaseError {
+    pub fn input(&self) -> &str {
+        match self {
+            TestCaseError::RuntimeError { ref input, .. } => input,
+            TestCaseError::WrongAnswer { ref input, .. } => input,
+        }
+    }
+}
+
+pub fn run_with_input(
+    app: &App,
+    run_cmd: &[String],
+    input: &mut impl Read,
+) -> crate::Result<process::Output> {
     let (run_program, run_program_args) = run_cmd
         .split_first()
         .ok_or_else(|| eyre::eyre!("Run command is empty"))?;
@@ -145,14 +246,12 @@ fn run_test(app: &App, run_cmd: &[String], test_case: &TestCase) -> crate::Resul
         );
     }
 
-    let expected_answer =
-        fs::read_to_string(&test_case.answer_file).wrap_err("Failed to read answer file")?;
-    let input_file = File::open(&test_case.input_file).wrap_err("Failed to open input file")?;
-
-    let output = Command::new(run_program)
+    let mut child = Command::new(run_program)
         .args(run_program_args)
-        .stdin(input_file)
-        .output()
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
         .map_err(|err| match err.kind() {
             io::ErrorKind::NotFound => {
                 eyre::eyre!("Failed to find the runner program '{}'", run_program)
@@ -160,24 +259,26 @@ fn run_test(app: &App, run_cmd: &[String], test_case: &TestCase) -> crate::Resul
             _ => eyre::eyre!("Failed to run the runner program: {}", err),
         })?;
 
-    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+    let mut child_stdin = child
+        .stdin
+        .take()
+        .ok_or_else(|| eyre::eyre!("Failed to capture stdin of your solution"))?;
 
-    if !output.status.success() {
-        return Ok(Err(TestCaseError::RuntimeError { stdout, stderr }));
-    }
+    io::copy(input, &mut child_stdin)
+        .wrap_err("Failed to write test case input to your solution")?;
 
-    if !are_equal_after_normalisation(&stdout, &expected_answer) {
-        return Ok(Err(TestCaseError::WrongAnswer {
-            expected: expected_answer.trim_end().to_string(),
-            actual: stdout.trim_end().to_string(),
-        }));
-    }
+    // Manually drop stdin to ensure that EOF is sent. If this is not done, the
+    // child process might not terminate if it reads until EOF.
+    drop(child_stdin);
 
-    Ok(Ok(()))
+    let output = child
+        .wait_with_output()
+        .wrap_err("Failed to run the solution")?;
+
+    Ok(output)
 }
 
-fn run_compile_cmd(app: &App, compile_cmd: &[String]) -> crate::Result<()> {
+pub fn run_compile_cmd(app: &App, compile_cmd: &[String]) -> crate::Result<()> {
     let (compiler_program, compiler_args) = compile_cmd
         .split_first()
         .ok_or_else(|| eyre::eyre!("Compile command is empty"))?;
