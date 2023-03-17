@@ -57,6 +57,10 @@ impl<'a> Solution<'a> {
             lang: solution_lang,
         })
     }
+
+    pub fn debug_dir(&self) -> PathBuf {
+        self.dir.join("debug")
+    }
 }
 
 #[derive(Debug)]
@@ -67,10 +71,6 @@ pub struct SolutionOptions<'a> {
 
 pub fn get_test_dir(solution_dir: impl AsRef<Path>) -> PathBuf {
     solution_dir.as_ref().join("test")
-}
-
-pub fn get_debug_dir(solution_dir: impl AsRef<Path>) -> PathBuf {
-    solution_dir.as_ref().join("debug")
 }
 
 fn resolve_solution_file_to_use(
