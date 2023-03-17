@@ -4,7 +4,7 @@ mod get;
 mod langs;
 mod open;
 mod submit;
-pub mod test;
+mod test;
 mod update;
 
 pub use config::config;
