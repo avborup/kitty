@@ -416,11 +416,10 @@ fn write_failure_to_files(solution: &Solution, failure: &GeneratorError) -> crat
             println!("\nTo use these as part of normal `kitty test` runs, move the .in/.ans files to the test folder of your solution.")
         }
         TestCaseError::RuntimeError { stdout, stderr, .. } => {
-            let combined: String = [stdout.clone(), stderr.clone()].join(" ");
             write_file(
                 "your solution's output",
                 &format!("{file_basename}.output"),
-                &combined,
+                &[stdout.clone(), stderr.clone()].join("\n"),
             )?;
         }
     }
