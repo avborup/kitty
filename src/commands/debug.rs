@@ -1,9 +1,10 @@
 use std::{
+    fs,
     io::{self, Read},
     path::{Path, PathBuf},
     process,
     sync::{RwLock, RwLockReadGuard},
-    time::{Duration, Instant},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
 use color_eyre::owo_colors::OwoColorize;
@@ -78,9 +79,10 @@ pub async fn debug(app: &App, args: &DebugArgs) -> crate::Result<()> {
             println!("{}:", "Input".bright_red());
             println!("{}\n", failure.test_case_error.input().trim_end());
 
+            write_failure_to_files(&solution, &failure)
+                .wrap_err("Failed to write input/answer to a file")?;
+
             // TODO: Hide output if too large
-            // TODO: Write input/output to files
-            // TODO: Helpful message.. "you can copy this to your test directory with .in/.ans files"
 
             return Ok(());
         }
@@ -364,6 +366,71 @@ fn resolve_generator_file_to_use(
     }
 
     eyre::bail!("Multiple {name} generator files found. Specify which file to use.");
+}
+
+fn write_failure_to_files(solution: &Solution, failure: &GeneratorError) -> crate::Result<()> {
+    let output_dir = solution.debug_save_dir();
+
+    fs::create_dir_all(&output_dir).wrap_err("Failed to create folder for the found case")?;
+
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .wrap_err("Failed to get current time")?
+        .as_secs();
+
+    let kind = match failure.test_case_error {
+        TestCaseError::WrongAnswer { .. } => "wrong-answer",
+        TestCaseError::RuntimeError { .. } => "runtime-error",
+    };
+
+    let file_basename = format!("{timestamp}-{kind}");
+
+    let write_file = |label: &str, filename: &str, content: &str| -> crate::Result<()> {
+        let file_path = output_dir.join(filename);
+
+        fs::write(&file_path, content)
+            .wrap_err_with(|| format!("Failed to write {label} file {}", file_path.display()))?;
+
+        println!(
+            "{} {label} to {}",
+            "Saving".bright_cyan(),
+            filename.underline()
+        );
+
+        Ok(())
+    };
+
+    write_file(
+        "input",
+        &format!("{file_basename}.in"),
+        failure.test_case_error.input(),
+    )?;
+
+    match &failure.test_case_error {
+        TestCaseError::WrongAnswer {
+            expected, actual, ..
+        } => {
+            write_file("expected answer", &format!("{file_basename}.ans"), expected)?;
+            write_file("your answer", &format!("{file_basename}.output"), actual)?;
+
+            println!("\nTo use these as part of normal `kitty test` runs, move the .in/.ans files to the test folder of your solution.")
+        }
+        TestCaseError::RuntimeError { stdout, stderr, .. } => {
+            let combined: String = [stdout.clone(), stderr.clone()].join(" ");
+            write_file(
+                "your solution's output",
+                &format!("{file_basename}.output"),
+                &combined,
+            )?;
+        }
+    }
+
+    println!(
+        "\nThe saved files can be found in {}",
+        output_dir.display().underline()
+    );
+
+    Ok(())
 }
 
 impl DebugArgs {

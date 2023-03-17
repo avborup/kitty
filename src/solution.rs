@@ -61,6 +61,10 @@ impl<'a> Solution<'a> {
     pub fn debug_dir(&self) -> PathBuf {
         self.dir.join("debug")
     }
+
+    pub fn debug_save_dir(&self) -> PathBuf {
+        self.debug_dir().join("saved")
+    }
 }
 
 #[derive(Debug)]
