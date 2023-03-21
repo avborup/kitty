@@ -3,6 +3,7 @@ use std::{
     io::{self, Read},
     path::PathBuf,
     process::{self, Command, Stdio},
+    time::{Duration, Instant},
 };
 
 use colored::Colorize;
@@ -25,7 +26,7 @@ pub trait TestCaseIO {
         R: Read;
 }
 
-pub type TestCaseResult = Result<(), TestCaseError>;
+pub type TestCaseResult = Result<TestCaseInfo, TestCaseError>;
 
 pub fn run_test<'a, T: TestCaseIO + 'a>(
     app: &App,
@@ -43,7 +44,9 @@ where
     let expected_answer =
         io::read_to_string(expected_answer).wrap_err("Failed to load expected answer")?;
 
+    let start_time = Instant::now();
     let output = run_with_input(app, run_cmd, &mut input.as_bytes())?;
+    let running_time = start_time.elapsed();
 
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
@@ -64,7 +67,7 @@ where
         }));
     }
 
-    Ok(Ok(()))
+    Ok(Ok(TestCaseInfo { running_time }))
 }
 
 pub fn run_with_input(
@@ -180,6 +183,11 @@ impl TestCaseIO for FileTestCase {
     fn answer<R: Read>(&self, _input: Option<R>) -> crate::Result<Self::Answer<'_>> {
         File::open(&self.answer_file).wrap_err("Failed to open answer file")
     }
+}
+
+#[derive(Debug)]
+pub struct TestCaseInfo {
+    pub running_time: Duration,
 }
 
 #[derive(Debug)]

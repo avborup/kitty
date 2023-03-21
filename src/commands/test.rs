@@ -1,7 +1,6 @@
 use std::{
     io::{stdout, Write},
     path::Path,
-    time::Instant,
 };
 
 use colored::Colorize;
@@ -77,14 +76,14 @@ fn run_tests(
         print!("test {} ... ", test_case.name);
         stdout().flush().wrap_err("Failed to flush output")?;
 
-        let start_time = Instant::now();
         let outcome = run_test(app, execution_commands.run_cmd(), test_case)?;
-        let elapsed_time = start_time.elapsed();
 
         print!("{}", if outcome.is_ok() { SUCCESS } else { FAILURE });
 
         if args.time {
-            print!(" in {:.2}s", elapsed_time.as_secs_f64());
+            if let Ok(test_info) = &outcome {
+                print!(" in {:.2}s", test_info.running_time.as_secs_f64());
+            }
         }
 
         if outcome.is_err() {
