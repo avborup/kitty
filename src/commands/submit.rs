@@ -275,7 +275,6 @@ impl SubmissionStatus {
 
         let test_case_statuses: Vec<_> = html
             .select(&Selector::parse(".testcase i.status-icon").unwrap())
-            .into_iter()
             .map(|el| TestCaseStatus::from_test_case_icon_html(el.value()))
             .collect();
 
