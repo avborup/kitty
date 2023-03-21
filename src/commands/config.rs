@@ -5,7 +5,6 @@ use eyre::Context;
 
 use crate::{
     cli::{ConfigArgs, ConfigSubcommand},
-    config::{self, Config},
     App,
 };
 
@@ -20,23 +19,21 @@ pub async fn config(app: &App, config_args: &ConfigArgs) -> crate::Result<()> {
     }
 }
 
-fn init_config_files(_app: &App) -> crate::Result<()> {
-    fs::create_dir_all(Config::templates_dir_path())?;
+fn init_config_files(app: &App) -> crate::Result<()> {
+    fs::create_dir_all(app.config.templates_dir_path())?;
 
     println!(
         indoc::indoc! {"
             Initialised config directory at {}.
             You should place your .kattisrc and kitty.yml here."
         },
-        Config::dir_path().display().to_string().underline()
+        app.config.config_dir.display().to_string().underline()
     );
 
     Ok(())
 }
 
-fn show_config_location(_app: &App) -> crate::Result<()> {
-    let config_dir = config::Config::dir_path();
-
+fn show_config_location(app: &App) -> crate::Result<()> {
     println!(
         indoc::indoc! {"
             Your config files should go in this directory:
@@ -48,10 +45,10 @@ fn show_config_location(_app: &App) -> crate::Result<()> {
              - Your kitty.yml file:   {}
              - Your templates folder: {}
         "},
-        config_dir.display().to_string().underline(),
-        Config::kattisrc_path().display(),
-        Config::config_file_path().display(),
-        Config::templates_dir_path().display()
+        app.config.config_dir.display().to_string().underline(),
+        app.config.kattisrc_path().display(),
+        app.config.config_file_path().display(),
+        app.config.templates_dir_path().display()
     );
 
     Ok(())

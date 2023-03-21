@@ -1,5 +1,5 @@
 use std::{
-    env::consts::EXE_EXTENSION,
+    env::{self, consts::EXE_EXTENSION},
     path::{Path, PathBuf},
 };
 
@@ -16,17 +16,22 @@ mod parser;
 #[derive(Debug, Default)]
 pub struct Config {
     pub kattisrc: Option<Kattisrc>,
+    pub config_dir: PathBuf,
     pub default_language: Option<String>,
     pub languages: Vec<Language>,
 }
 
 impl Config {
     pub fn load() -> crate::Result<Self> {
-        let kattisrc = Kattisrc::from_file(Self::kattisrc_path())?;
-        let yml_config = parse_config_from_yaml_file(Self::config_file_path())?;
+        let config_dir =
+            Self::get_config_dir_path_from_env().unwrap_or_else(Self::default_config_dir_path);
+
+        let kattisrc = Kattisrc::from_file(Self::kattisrc_path_with_dir(&config_dir))?;
+        let yml_config = parse_config_from_yaml_file(Self::config_file_path_with_dir(&config_dir))?;
 
         let config = Config {
             kattisrc,
+            config_dir,
             ..yml_config
         };
 
@@ -36,7 +41,11 @@ impl Config {
     pub fn try_kattisrc(&self) -> crate::Result<&Kattisrc> {
         self.kattisrc
             .as_ref()
-            .ok_or_else(|| eyre::eyre!("Could not find .kattisrc file. You must download your .kattisrc file from https://open.kattis.com/download/kattisrc and save it at '{}'", Self::kattisrc_path().display()))
+            .ok_or_else(|| eyre::eyre!("Could not find .kattisrc file. You must download your .kattisrc file from https://open.kattis.com/download/kattisrc and save it at '{}'", self.kattisrc_path().display()))
+    }
+
+    pub fn get_config_dir_path_from_env() -> Option<PathBuf> {
+        env::var("KATTIS_KITTY_CONFIG_DIR").map(PathBuf::from).ok()
     }
 
     /// Gets kitty's config directory. The location of this directory will vary
@@ -44,22 +53,34 @@ impl Config {
     ///  - `%APPDATA%/kitty` on Windows
     ///  - `~/.config/kitty` on Linux
     ///  - `~/Library/Application Support/kitty` on macOS
-    pub fn dir_path() -> PathBuf {
+    pub fn default_config_dir_path() -> PathBuf {
         platform_dirs::AppDirs::new(Some("kitty"), false)
             .expect("failed to find where the kitty config directory should be located")
             .config_dir
     }
 
-    pub fn kattisrc_path() -> PathBuf {
-        Self::dir_path().join(".kattisrc")
+    pub fn kattisrc_path(&self) -> PathBuf {
+        Self::kattisrc_path_with_dir(&self.config_dir)
     }
 
-    pub fn config_file_path() -> PathBuf {
-        Self::dir_path().join("kitty.yml")
+    pub fn config_file_path(&self) -> PathBuf {
+        Self::config_file_path_with_dir(&self.config_dir)
     }
 
-    pub fn templates_dir_path() -> PathBuf {
-        Self::dir_path().join("templates")
+    pub fn templates_dir_path(&self) -> PathBuf {
+        Self::templates_dir_path_with_dir(&self.config_dir)
+    }
+
+    pub fn kattisrc_path_with_dir(dir: impl AsRef<Path>) -> PathBuf {
+        dir.as_ref().join(".kattisrc")
+    }
+
+    pub fn config_file_path_with_dir(dir: impl AsRef<Path>) -> PathBuf {
+        dir.as_ref().join("kitty.yml")
+    }
+
+    pub fn templates_dir_path_with_dir(dir: impl AsRef<Path>) -> PathBuf {
+        dir.as_ref().join("templates")
     }
 
     pub fn lang_from_file_ext(&self, file_ext: &str) -> Option<&Language> {

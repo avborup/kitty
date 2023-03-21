@@ -70,6 +70,14 @@ which will create a file called `<PROBLEM ID>.java` that you can use.
 Alternatively, you can set the default language for kitty to use so that you don't need to specify the language argument every time you fetch a problem. See the following configuration section for more.
 
 ### Configuration
+All configuration is stored in kitty's configuration folder. To find the location of kitty's configuration folder, run `kitty config location`. 
+
+If you want to use another location for the configuration folder, you can use the `KATTIS_KITTY_CONFIG_DIR` environment variable. This may be useful for those of you who use the kitty terminal. For example:
+```
+KATTIS_KITTY_CONFIG_DIR=~/dotfiles/my-kitty-cli-config-dir kitty config location
+```
+Naturally, you can add this environment variable to your shell of choice.
+
 #### `.kattisrc`
 
 Kattis provides you with a `.kattisrc` file, which contains:
@@ -83,8 +91,6 @@ You can download your personal `.kattisrc` at <https://open.kattis.com/download/
 Kitty does not store information about programming languages (how to run or compile a program, file extensions, etc.) - instead it is you who must define which programming languages kitty can use. This also means you are completely free to specify compiler flags, add new languages and so forth.
 
 The configuration is done via a YAML file called `kitty.yml` located in your kitty configuration folder. This repository contains an example configuration (with comments describing the different options): [kitty.yml](https://github.com/avborup/kitty/blob/master/kitty.yml). Here you will find configurations for a fair amount of languages supported by Kattis. Feel free to simply download that file as it may fit your needs just fine.
-
-To find the location of kitty's configuration folder, run `kitty config location`. 
 
 To see which languages kitty has picked up on from your configuration file, run
 ```
