@@ -11,7 +11,7 @@ use zip::ZipArchive;
 
 use crate::{
     cli::GetArgs,
-    config::{language::Language, Config},
+    config::language::Language,
     problem::{make_problem_sample_tests_zip_url, make_problem_url, problem_id_is_legal},
     solution::get_test_dir,
     App,
@@ -140,7 +140,7 @@ fn populate_template(
         };
 
     if let Some(language) = lang {
-        copy_template_with_lang(args, solution_dir, language)
+        copy_template_with_lang(app, args, solution_dir, language)
             .wrap_err("Failed to populate the solution folder with your template")?;
     }
 
@@ -148,11 +148,12 @@ fn populate_template(
 }
 
 fn copy_template_with_lang(
+    app: &App,
     args: &GetArgs,
     solution_dir: impl AsRef<Path>,
     lang: &Language,
 ) -> crate::Result<()> {
-    let templates_dir = Config::templates_dir_path();
+    let templates_dir = app.config.templates_dir_path();
     let template_file = templates_dir
         .join("template")
         .with_extension(lang.file_ext());
