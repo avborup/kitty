@@ -3,7 +3,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use eyre::ensure;
 use kattisrc::Kattisrc;
 
 use crate::utils::get_full_path;
@@ -25,7 +24,7 @@ pub struct Config {
 impl Config {
     pub fn load() -> crate::Result<Self> {
         let config_dir =
-            Self::get_config_dir_path_from_env()?.unwrap_or_else(Self::default_config_dir_path);
+            Self::get_config_dir_path_from_env().unwrap_or_else(Self::default_config_dir_path);
 
         let kattisrc = Kattisrc::from_file(Self::kattisrc_path_with_dir(&config_dir))?;
         let yml_config = parse_config_from_yaml_file(Self::config_file_path_with_dir(&config_dir))?;
@@ -45,19 +44,8 @@ impl Config {
             .ok_or_else(|| eyre::eyre!("Could not find .kattisrc file. You must download your .kattisrc file from https://open.kattis.com/download/kattisrc and save it at '{}'", self.kattisrc_path().display()))
     }
 
-    pub fn get_config_dir_path_from_env() -> crate::Result<Option<PathBuf>> {
-        match env::var("KATTIS_KITTY_CONFIG_DIR").map(PathBuf::from) {
-            Ok(path) => {
-                ensure!(
-                    path.is_dir(),
-                    "The config directory path '{}' is not a directory",
-                    path.display()
-                );
-
-                Ok(Some(path))
-            }
-            Err(_) => Ok(None),
-        }
+    pub fn get_config_dir_path_from_env() -> Option<PathBuf> {
+        env::var("KATTIS_KITTY_CONFIG_DIR").map(PathBuf::from).ok()
     }
 
     /// Gets kitty's config directory. The location of this directory will vary
