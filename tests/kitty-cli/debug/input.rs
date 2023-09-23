@@ -23,10 +23,10 @@ fn input_generator_finishes_on_valid_solution() {
                 .assert(StdOut, contains("Running test 1/100..."))
                 .assert(
                     StdOut,
-                    contains(indoc::indoc! {r#"
+                    matches_regex(indoc::indoc! {r#"
                         Running test 100/100... ✅
 
-                        Passed all 100 test cases. Running times:
+                        Passed all 100 test cases. Running times: min \d+.\d+s, max \d+.\d+s, average \d+.\d+s.
                     "#}),
                 );
         }
