@@ -82,11 +82,11 @@ fn runtime_error_is_shown() {
 
                     test 1 ... ❌
                     Runtime error:
+
                     Traceback (most recent call last):
                       File "/work/quadrant/./quadrant.py", line 10, in <module>
                         raise Exception("I don't know what quadrant this is in!")
                     Exception: I don't know what quadrant this is in!
-
 
                     test 2 ... ✅
 
