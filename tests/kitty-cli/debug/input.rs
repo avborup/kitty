@@ -1,7 +1,7 @@
 use futures_util::FutureExt;
 
 use crate::helpers::{
-    contains, make_standard_setup, run_with_sandbox,
+    contains, make_standard_setup, matches_regex, run_with_sandbox,
     OutputSource::{StdErr, StdOut},
 };
 
@@ -51,28 +51,28 @@ fn input_generator_shows_error_if_solution_crashes() {
                 "/work/quadrant/debug/input.py",
             );
 
-            env.run("cd quadrant && kitty debug input")
-                .await
-                .assert(StdOut, contains("Running test 1/100..."))
-                .assert(StdOut, contains(""))
-                .assert(
-                    StdOut,
-                    contains(indoc::indoc! {r#"
-                        /100... ❌
+            env.run("cd quadrant && kitty debug input").await.assert(
+                StdOut,
+                matches_regex(indoc::indoc! {r#"
+                    Running test \d+/\d+... ❌
 
-                        Runtime error:
+                    Runtime error:
 
-                        Traceback (most recent call last):
-                          File "/work/quadrant/./quadrant.py", line 10, in <module>
-                            raise Exception("I don't know what quadrant this is in!")
-                        Exception: I don't know what quadrant this is in!
+                    Traceback (most recent call last):
+                      File "/work/quadrant/./quadrant.py", line 10, in <module>
+                        raise Exception("I don't know what quadrant this is in!")
+                    Exception: I don't know what quadrant this is in!
 
-                        Input:
-                    "#}),
-                )
-                .assert(StdOut, contains("Saving input to"))
-                .assert(StdOut, contains("Saving your solution's output to"))
-                .assert(StdOut, contains("The saved files can be found in"));
+                    Input:
+                    \d+
+                    \d+
+
+                    Saving input to \d+-runtime-error.in
+                    Saving your solution's output to \d+-runtime-error.output
+
+                    The saved files can be found in /work/quadrant/./debug/saved
+                "#}),
+            );
         }
         .boxed()
     }));
