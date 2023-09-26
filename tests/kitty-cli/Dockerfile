@@ -7,7 +7,7 @@ WORKDIR /
 # Create blank project
 RUN USER=root cargo new app
 # We want dependencies cached, so copy those first.
-COPY Cargo.toml Cargo.lock /app
+COPY Cargo.* /app
 WORKDIR /app
 
 # This is a dummy build to get the dependencies cached.
