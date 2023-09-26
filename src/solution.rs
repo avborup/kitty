@@ -6,7 +6,7 @@ use std::{
 };
 
 use color_eyre::owo_colors::OwoColorize;
-use eyre::Context;
+use eyre::{Context, ContextCompat};
 
 use crate::{
     config::language::Language,
@@ -107,7 +107,23 @@ fn resolve_solution_file_to_use(
         return Ok(file.clone());
     }
 
-    eyre::bail!("Multiple solution files found. Specify which file to use with the --file option.");
+    let file_names = options
+        .iter()
+        .map(resolve_and_get_file_name)
+        .collect::<crate::Result<Vec<_>>>()
+        .wrap_err("Failed to extract file names from solution folder")?;
+
+    let selection = dialoguer::Select::with_theme(&dialoguer::theme::ColorfulTheme::default())
+        .with_prompt("Multiple solution files found. Specify which file to use:")
+        .items(&file_names)
+        .default(0)
+        .interact()
+        .wrap_err("Failed to choose solution file")?;
+
+    options
+        .get(selection)
+        .cloned()
+        .wrap_err("Selected option was invalid")
 }
 
 pub fn get_all_files_with_known_extension(
