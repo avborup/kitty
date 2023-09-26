@@ -1,4 +1,4 @@
-FROM rust:1.67-slim
+FROM rust:1.72-slim
 
 RUN apt update && apt install -y libssl-dev pkg-config
 RUN apt install -y python3 python-is-python3

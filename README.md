@@ -106,6 +106,28 @@ Python 3   py
 Rust       rs
 ```
 
+### Testing programmatically
+
+There may be cases where you want to automatically generate test cases with a program. To do this, `kitty` has the `debug input` command that will feed whatever your input generator outputs into your solution program:
+
+```sh
+kitty debug input
+```
+
+The logical equivalence of this command is running `run-solution < $(run-input-generator)` *n* times or until a runtime error occurs.
+
+See the help message for how to create the input generator and specify the number of iterations. By default, `kitty` uses the file at `<solution folder>/debug/input.<extension>`.
+
+On top of this, you can use `kitty` to automatically check your solution's answer against another implementation. For instance, you may be able to implement a correct but slow solution. When developing the faster solution, you can use the slow solution to check that the new version outputs the correct answers across automatically generated inputs:
+
+```sh
+kitty debug answer
+```
+
+This is logically equivalent to `kitty test` but where the `.in` file is replaced with an input generator program and the `.ans` file is replaced with an answer validator program.
+
+See the help message for more information. By default, `kitty` uses the file at `<solution folder>/debug/answer.<extension>`.
+
 ## Installation
 ### Installation script (Windows only)
 You can use the following PowerShell command to install kitty. This will download the latest binary and a default config file.

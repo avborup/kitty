@@ -1,3 +1,5 @@
+use regex::RegexBuilder;
+
 #[derive(Debug)]
 pub struct Output {
     pub stdout: String,
@@ -6,6 +8,7 @@ pub struct Output {
 
 pub enum OutputAssertion {
     Contains(String),
+    MatchesRegex(String),
     Equals(String),
     Empty,
 }
@@ -24,6 +27,7 @@ impl Output {
 
         match assertion {
             OutputAssertion::Contains(expected) => assert_output_contains(actual, expected),
+            OutputAssertion::MatchesRegex(regex) => assert_output_matches_regex(actual, regex),
             OutputAssertion::Equals(expected) => assert_output_eq(actual, expected),
             OutputAssertion::Empty => assert_is_empty(actual),
         }
@@ -43,6 +47,26 @@ fn assert_output_contains(actual: impl AsRef<str>, expected_substring: impl AsRe
     assert!(
         a.contains(&b),
         "Expected `actual` to contain `expected`:\n  actual:   {a:?}\n  expected: {b:?}",
+    );
+}
+
+fn assert_output_matches_regex(actual: impl AsRef<str>, regex_str: impl AsRef<str>) {
+    let input = normalise_string(actual);
+
+    let regex_str = normalise_string(regex_str)
+        .trim()
+        .replace("(", r"\(")
+        .replace(")", r"\)")
+        .replace(".", r"\.");
+    let regex = RegexBuilder::new(&regex_str)
+        .multi_line(true)
+        .dot_matches_new_line(true)
+        .build()
+        .unwrap();
+
+    assert!(
+        regex.is_match(input.as_ref()),
+        "Expected `input` to match `regex`:\n  input:   {input:?}\n  regex: {regex_str:?}",
     );
 }
 
@@ -69,6 +93,12 @@ fn normalise_string(s: impl AsRef<str>) -> String {
 
 pub fn contains(expected: impl Into<String>) -> OutputAssertion {
     OutputAssertion::Contains(expected.into())
+}
+
+/// Check if the output matches a regex in restricted form. Beware that
+/// parentheses and periods are automatically escaped.
+pub fn matches_regex(regex: impl Into<String>) -> OutputAssertion {
+    OutputAssertion::MatchesRegex(regex.into())
 }
 
 pub fn equals(expected: impl Into<String>) -> OutputAssertion {

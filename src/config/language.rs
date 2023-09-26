@@ -66,6 +66,7 @@ impl fmt::Display for Language {
     }
 }
 
+#[derive(Debug)]
 pub struct ExecuteProgramCommands {
     run_cmd: Vec<String>,
     compile_cmd: Option<Vec<String>>,

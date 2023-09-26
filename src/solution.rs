@@ -10,6 +10,7 @@ use eyre::Context;
 
 use crate::{
     config::language::Language,
+    test_io::FileTestCase,
     utils::{get_full_path, resolve_and_get_file_name},
     App,
 };
@@ -56,6 +57,14 @@ impl<'a> Solution<'a> {
             lang: solution_lang,
         })
     }
+
+    pub fn debug_dir(&self) -> PathBuf {
+        self.dir.join("debug")
+    }
+
+    pub fn debug_save_dir(&self) -> PathBuf {
+        self.debug_dir().join("saved")
+    }
 }
 
 #[derive(Debug)]
@@ -101,7 +110,7 @@ fn resolve_solution_file_to_use(
     eyre::bail!("Multiple solution files found. Specify which file to use with the --file option.");
 }
 
-fn get_all_files_with_known_extension(
+pub fn get_all_files_with_known_extension(
     app: &App,
     folder: impl AsRef<Path>,
 ) -> crate::Result<Vec<PathBuf>> {
@@ -122,13 +131,7 @@ fn get_all_files_with_known_extension(
     Ok(options)
 }
 
-pub struct TestCase {
-    pub name: String,
-    pub input_file: PathBuf,
-    pub answer_file: PathBuf,
-}
-
-pub fn get_test_cases(solution_dir: impl AsRef<Path>) -> crate::Result<Vec<TestCase>> {
+pub fn get_test_cases(solution_dir: impl AsRef<Path>) -> crate::Result<Vec<FileTestCase>> {
     let test_dir_files = get_test_dir(solution_dir)
         .read_dir()
         .wrap_err("Failed to read test case folder")?
@@ -166,7 +169,7 @@ pub fn get_test_cases(solution_dir: impl AsRef<Path>) -> crate::Result<Vec<TestC
     let test_files = input_files
         .into_iter()
         .filter_map(|(name, input_file)| {
-            answer_files.remove(&name).map(|answer_file| TestCase {
+            answer_files.remove(&name).map(|answer_file| FileTestCase {
                 name,
                 input_file,
                 answer_file,

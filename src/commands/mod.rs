@@ -1,4 +1,5 @@
 mod config;
+mod debug;
 mod get;
 mod langs;
 mod open;
@@ -7,6 +8,7 @@ mod test;
 mod update;
 
 pub use config::config;
+pub use debug::debug;
 pub use get::get;
 pub use langs::langs;
 pub use open::open;
