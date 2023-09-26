@@ -59,13 +59,13 @@ fn input_generator_shows_error_if_solution_crashes() {
                     Runtime error:
 
                     Traceback (most recent call last):
-                      File "/work/quadrant/./quadrant.py", line 10, in <module>
+                      File "/work/quadrant/./quadrant.py", line 6, in <module>
                         raise Exception("I don't know what quadrant this is in!")
                     Exception: I don't know what quadrant this is in!
 
                     Input:
-                    \d+
-                    \d+
+                    -?\d+
+                    -?\d+
 
                     Saving input to \d+-runtime-error.in
                     Saving your solution's output to \d+-runtime-error.output
@@ -73,6 +73,26 @@ fn input_generator_shows_error_if_solution_crashes() {
                     The saved files can be found in /work/quadrant/./debug/saved
                 "#}),
             );
+        }
+        .boxed()
+    }));
+}
+
+#[test]
+fn missing_input_generator_shows_helpful_message() {
+    run_with_sandbox(Box::new(|env| {
+        async move {
+            make_standard_setup(&env).await;
+
+            env.copy("./tests/kitty-cli/data/quadrant", "/work/quadrant");
+            env.run("cd /work/quadrant && mkdir debug").await;
+
+            env.run("cd quadrant && kitty debug input")
+                .await
+                .assert(
+                    StdErr,
+                    contains("Error: No input generator file found in the debug folder: /work/quadrant/./debug. See the help message for how to create one."),
+                );
         }
         .boxed()
     }));

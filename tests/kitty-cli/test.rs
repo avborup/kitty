@@ -84,7 +84,7 @@ fn runtime_error_is_shown() {
                     Runtime error:
 
                     Traceback (most recent call last):
-                      File "/work/quadrant/./quadrant.py", line 10, in <module>
+                      File "/work/quadrant/./quadrant.py", line 6, in <module>
                         raise Exception("I don't know what quadrant this is in!")
                     Exception: I don't know what quadrant this is in!
 
