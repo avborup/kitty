@@ -1,0 +1,27 @@
+name: Run tests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  run_tests:
+    name: Run tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install latest Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          default: true
+          override: true
+
+      - run: make test
+        env:
+          KATTIS_TEST_USERNAME: ${{ secrets.KATTIS_TEST_USERNAME }}
+          KATTIS_TEST_TOKEN: ${{ secrets.KATTIS_TEST_TOKEN }}
