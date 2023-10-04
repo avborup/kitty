@@ -64,6 +64,7 @@ where
             input,
             expected: expected_answer.trim_end().to_string(),
             actual: stdout.trim_end().to_string(),
+            stderr: stderr.trim_end().to_string(),
         }));
     }
 
@@ -196,6 +197,7 @@ pub enum TestCaseError {
         input: String,
         expected: String,
         actual: String,
+        stderr: String,
     },
     RuntimeError {
         input: String,
@@ -212,15 +214,23 @@ impl TestCaseError {
         }
     }
 
-    pub fn print(&self) {
+    pub fn print(&self, app: &App) {
         match self {
             TestCaseError::WrongAnswer {
-                expected, actual, ..
+                expected,
+                actual,
+                stderr,
+                ..
             } => {
                 println!("{}", "Expected:".underline());
                 println!("{}\n", expected.trim_end());
                 println!("{}", "Actual:".underline());
                 println!("{}\n", actual.trim_end());
+
+                if app.args.should_show_wrong_answer_stderr() {
+                    println!("{}", "Stderr:".underline());
+                    println!("{}\n", stderr.trim_end());
+                }
             }
             TestCaseError::RuntimeError { stdout, stderr, .. } => {
                 println!("{}:", "Runtime error".bright_red());
