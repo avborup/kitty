@@ -170,6 +170,10 @@ pub struct TestArgs {
     /// glob pattern.
     #[arg(short = 'F', long)]
     pub filter: Option<String>,
+
+    /// Shows the solution's stderr output in case of a wrong answer.
+    #[arg(short = 'e', long, default_value_t = false)]
+    stderr: bool,
 }
 
 /// Opens a problem in the browser
@@ -294,4 +298,13 @@ pub struct DebugAnswerArgs {
     /// 'answer' will be used (for example 'answer.py').
     #[arg(short, long = "answer-validator")]
     pub answer_validator_path: Option<PathBuf>,
+}
+
+impl KittyArgs {
+    pub fn should_show_wrong_answer_stderr(&self) -> bool {
+        match &self.subcommand {
+            KittySubcommand::Test(args) => args.stderr,
+            _ => false,
+        }
+    }
 }

@@ -93,7 +93,7 @@ fn run_tests(
         println!();
 
         if let Err(test_case_error) = outcome {
-            test_case_error.print();
+            test_case_error.print(app);
         }
     }
 

@@ -224,3 +224,40 @@ fn filter_only_runs_matching_tests() {
         .boxed()
     }));
 }
+
+#[test]
+fn stderr_flag_shows_stderr_in_wrong_answer() {
+    run_with_sandbox(Box::new(|env| {
+        async move {
+            make_standard_setup(&env).await;
+
+            env.copy("./tests/kitty-cli/data/quadrant", "/work/quadrant");
+            env.copy(
+                "./tests/kitty-cli/data/quadrant-wrong-answer.py",
+                "/work/quadrant/quadrant.py",
+            );
+
+            env.run("cd quadrant && kitty test --stderr").await.assert(
+                StdOut,
+                contains(indoc::indoc! {r#"
+                    Running 2 tests
+
+                    test 1 ... ❌
+                    Expected:
+                    1
+
+                    Actual:
+                    3
+
+                    Stderr:
+                    Input was (10, 6)
+
+                    test 2 ... ✅
+
+                    Test result: failed. 1 passed; 1 failed.
+                "#}),
+            );
+        }
+        .boxed()
+    }));
+}

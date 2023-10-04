@@ -74,7 +74,7 @@ pub async fn debug(app: &App, args: &DebugArgs) -> crate::Result<()> {
         if let Err(failure) = outcome {
             println!("{FAILURE}\n");
 
-            failure.test_case_error.print();
+            failure.test_case_error.print(app);
 
             println!("{}:", "Input".bright_red());
             println!("{}\n", failure.test_case_error.input().trim_end());
