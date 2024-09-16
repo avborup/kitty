@@ -40,7 +40,7 @@ jobs:
         run: rustup target add ${{ matrix.target }}
 
       - name: Build binary
-        run: cargo +nightly build --release --target ${{ matrix.target }} --out-dir kitty-artifacts -Z unstable-options
+        run: cargo build --release --target ${{ matrix.target }} --out-dir kitty-artifacts
 
       - name: Upload binary to release
         uses: svenstaro/upload-release-action@v1-release
