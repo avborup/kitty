@@ -8,8 +8,7 @@ use colored::Colorize;
 use eyre::Context;
 use regex::Regex;
 use reqwest::multipart::{Form, Part};
-use scraper::{node::Element, Html, Selector};
-use selectors::attr::CaseSensitivity;
+use scraper::{node::Element, CaseSensitivity, Html, Selector};
 use serde::Deserialize;
 use tokio::time::sleep;
 
