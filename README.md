@@ -129,12 +129,25 @@ This is logically equivalent to `kitty test` but where the `.in` file is replace
 See the help message for more information. By default, `kitty` uses the file at `<solution folder>/debug/answer.<extension>`.
 
 ## Installation
+Use one of the following methods to install kitty.
+
+After installing make sure to continue to [Configuration](#Configuration) to set up your `.kattisrc`.
+
+### Winget (Windows only)
+Run the following command in PowerShell or CMD
+> Note: Till fixed, you will need to install the `.kattisrc` and `kitty.yml` manually
+
+```powershell
+winget install avborup.kitty
+```
+
 ### Installation script (Windows only)
 You can use the following PowerShell command to install kitty. This will download the latest binary and a default config file.
 
 ```powershell
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/avborup/kitty/master/scripts/install.ps1'))
 ```
+
 ### Cargo
 You can install Kitty using cargo.
 ```sh
